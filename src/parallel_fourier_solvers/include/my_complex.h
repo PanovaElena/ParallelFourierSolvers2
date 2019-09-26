@@ -3,61 +3,63 @@
 #include <iostream>
 
 class MyComplex {
-    double data[2];
-
+    double real;
+    double imag;
 public:
     MyComplex() {
-        data[0] = 0;
-        data[1] = 0;
+        real = 0;
+        imag = 0;
     }
     MyComplex(double real, double imag) {
-        data[0] = real;
-        data[1] = imag;
+        real = real;
+        imag = imag;
     }
     MyComplex(double a) {
-        data[0] = a;
-        data[1] = 0;
+        real = a;
+        imag = 0;
     }
     static MyComplex getTrig(double r, double fi) {
         MyComplex z;
-        z.data[0] = r * cos(fi);
-        z.data[1] = r * sin(fi);
+        z.real = r * cos(fi);
+        z.imag = r * sin(fi);
         return z;
     }
+
     void setReal(double real) {
-        data[0] = real;
+        real = real;
     }
     void setImag(double imag) {
-        data[1] = imag;
+        imag = imag;
     }
     double getReal() const {
-        return data[0];
+        return real;
     }
     double getImag() const {
-        return data[1];
+        return imag;
     }
+
     double getAbs() const {
-        return sqrt(data[0] * data[0] + data[1] * data[1]);
+        return sqrt(real * real + imag * imag);
     }
     friend MyComplex operator*(const MyComplex& z, const double a) {
-        return MyComplex(z.data[0] * a, z.data[1] * a);
+        return MyComplex(z.real * a, z.imag * a);
     }
     friend MyComplex operator*(const double a, const MyComplex& z) {
-        return MyComplex(z.data[0] * a, z.data[1] * a);
+        return MyComplex(z.real * a, z.imag * a);
     }
     friend MyComplex operator*(const MyComplex& z1, const MyComplex& z2) {
-        return MyComplex(z1.data[0] * z2.data[0] - z1.data[1] * z2.data[1],
-            z1.data[0] * z2.data[1] + z2.data[0] * z1.data[1]);
+        return MyComplex(z1.real * z2.real - z1.imag * z2.imag,
+            z1.real * z2.imag + z2.real * z1.imag);
     }
     friend MyComplex operator/(const MyComplex& z, const double a) {
-        return MyComplex(z.data[0] / a, z.data[1] / a);
+        return MyComplex(z.real / a, z.imag / a);
     }
     friend MyComplex operator+(const MyComplex& z1, const MyComplex& z2) {
-        return MyComplex(z1.data[0] + z2.data[0], z1.data[1] + z2.data[1]);
+        return MyComplex(z1.real + z2.real, z1.imag + z2.imag);
     }
     MyComplex& operator+=(const MyComplex& z2) {
-        data[0] += z2.data[0];
-        data[1] += z2.data[1];
+        real += z2.real;
+        imag += z2.imag;
         return *this;
     }
     MyComplex& operator*=(const MyComplex& z2) {
@@ -65,26 +67,26 @@ public:
         return *this;
     }
     MyComplex& operator-=(const MyComplex& z2) {
-        data[0] -= z2.data[0];
-        data[1] -= z2.data[1];
+        real -= z2.real;
+        imag -= z2.imag;
         return *this;
     }
     friend MyComplex operator-(const MyComplex& z1, const MyComplex& z2) {
         return z1 + (-1)*z2;
     }
     friend bool operator==(const MyComplex& z1, const MyComplex& z2) {
-        return (z1.data[0] == z2.data[0] && z1.data[1] == z2.data[1]);
+        return (z1.real == z2.real && z1.imag == z2.imag);
     }
     friend bool operator!=(const MyComplex& z1, const MyComplex& z2) {
         return !(z1 == z2);
     }
     MyComplex conjugate() const {
-        return MyComplex(data[0], -data[1]);
+        return MyComplex(real, -imag);
     }
-    operator double() { return data[0]; }
+    operator double() { return real; }
 	
 	friend std::ostream& operator<<(std::ostream& ost, const MyComplex& c) {
-        ost << "(" << c.data[0] << "," << c.data[1] << ")";
+        ost << "(" << c.real << "," << c.imag << ")";
         return ost;
     }
 	
@@ -92,7 +94,8 @@ public:
         return sqrt(a.getReal()*a.getReal() + a.getImag()*a.getImag());
     }
 
-};
+    static MyComplex i() {
+        return MyComplex(0, 1);
+    }
 
-const MyComplex complex_i(0, 1);
-const MyComplex complex_0(0, 0);
+};
