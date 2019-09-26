@@ -1,0 +1,2 @@
+add_subdirectory(running_wave)
+add_subdirectory(spherical_wave)

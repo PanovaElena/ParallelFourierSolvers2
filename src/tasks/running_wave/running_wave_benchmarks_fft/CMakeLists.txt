@@ -1,0 +1,2 @@
+add_subdirectory(global_fft_omp)
+add_subdirectory(global_fft_mpi)
