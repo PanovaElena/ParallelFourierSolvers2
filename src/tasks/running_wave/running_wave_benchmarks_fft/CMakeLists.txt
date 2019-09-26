@@ -1,2 +1,5 @@
 add_subdirectory(global_fft_omp)
-add_subdirectory(global_fft_mpi)
+
+if (USE_GLOBAL_FFT)
+    add_subdirectory(global_fft_mpi)
+endif()

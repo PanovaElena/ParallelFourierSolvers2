@@ -24,9 +24,3 @@ enum Coordinate {
     z
 };
 
-enum Direction {
-    None,
-    RtoC,
-    CtoR
-};
-

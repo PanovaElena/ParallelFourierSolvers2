@@ -7,5 +7,5 @@ if(USE_GLOBAL_FFT)
 endif()
 
 if(USE_BENCH_FFT)
-    add_subdirectory(running_wave_genchmarks_fft)
+    add_subdirectory(running_wave_benchmarks_fft)
 endif()
