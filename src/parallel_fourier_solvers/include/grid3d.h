@@ -7,6 +7,14 @@
 template <class T>
 struct FieldForGrid : public vec3<Array3d<T>> {
 
+    vec3<T> operator() (int i, int j, int k) {
+        return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
+    }
+    void write(int i, int j, int k, vec3<T> val) {
+        this->x(i, j, k) = val.x;
+        this->y(i, j, k) = val.y;
+        this->z(i, j, k) = val.z;
+    }
     void clear() {
         this->x.clear();
         this->y.clear();

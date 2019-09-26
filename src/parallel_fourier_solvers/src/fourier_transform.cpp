@@ -82,10 +82,10 @@ void FourierTransformOfGrid::fourierTransform(Grid3d & grid, Field _field, Coord
     makeFFT(arrD, arrC, globalSize, dir, plans[dir][_field][_coord]);
 }
 
-#ifdef __USE_GLOBAL_FFT__
 
 void FourierMpiTransformOfGrid::createPlans(Grid3d & grid)
 {
+#ifdef __USE_GLOBAL_FFT__
     int Nx = globalSize.x, Ny = globalSize.y, Nz = globalSize.z;
     for (int field = 0; field < 3; field++)
         for (int coord = 0; coord < 3; coord++) {
@@ -102,6 +102,7 @@ void FourierMpiTransformOfGrid::createPlans(Grid3d & grid)
                 MPI_COMM_WORLD, FFTW_MEASURE);
 
         }
-}
-
+#else __USE_GLOBAL_FFT__
+    FourierTransformOfGrid::createPlans(grid);
 #endif __USE_GLOBAL_FFT__
+}

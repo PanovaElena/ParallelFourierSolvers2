@@ -38,22 +38,20 @@ protected:
 };
 
 
-#ifdef __USE_GLOBAL_FFT__
-
 class FourierMpiTransformOfGrid : public FourierTransformOfGrid {
 public:
     FourierMpiTransformOfGrid() {}
-    FourierMpiTransformOfGrid(Grid3d& grid, vec3<int> globalSize) {
+    FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int> globalSize) {
         this->globalSize = globalSize;
         initialize(grid, globalSize);
     }
-    void initialize(Grid3d& grid, vec3<int> globalSize) {
+    void initialize(Grid3d& grid, const vec3<int> globalSize) {
         createPlans(grid);
     }
+
+protected:
     void createPlans(Grid3d& grid) override;
 
 private:
     void initialize(Grid3d& grid);
 };
-
-#endif __USE_GLOBAL_FFT__
