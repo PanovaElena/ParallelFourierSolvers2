@@ -26,23 +26,24 @@ public:
         sizeZ = _sizeZ;
     }
 
-    vec3<int> MPISize() {
-        return vec3<int>(sizeX, sizeY, sizeZ);
-    }
     int getScalarRank(vec3<int> rank) {
         return (rank.x*sizeY + rank.y)*sizeZ + rank.z;
+    }
+    vec3<int> getVecRank(int rank) {
+        int z = rank % sizeZ;
+        int tmp = rank / sizeZ;
+        int y = tmp % sizeY;
+        int x = tmp / sizeY;
+        return vec3<int>(x, y, z);
     }
     int getTag(vec3<int> dim) {
         int N = 3;
         dim = dim + vec3<int>(N);
         return (dim.x*N + dim.y)*N + dim.z;
     }
-    vec3<int> getVecRank(int rank) {
-        int z = rank%sizeZ;
-        int tmp = rank / sizeZ;
-        int y = tmp%sizeY;
-        int x = tmp / sizeY;
-        return vec3<int>(x, y, z);
+
+    vec3<int> MPISize() {
+        return vec3<int>(sizeX, sizeY, sizeZ);
     }
     vec3<int> MPIRank() {
         int rank = MPIWrapper::MPIRank();
@@ -54,6 +55,7 @@ public:
     void MPIRecv(double*& buf, int size, vec3<int> source, int tag) {
         MPIWrapper::MPIRecv(buf, size, getScalarRank(source), tag);
     }
+
     void MPIISendSubarray(Array3d<double>& arr, vec3<int> n1, vec3<int> n2,
         vec3<int> dest, int tag, MPI_Request& request) {
         MPI_Datatype mysubarray;
