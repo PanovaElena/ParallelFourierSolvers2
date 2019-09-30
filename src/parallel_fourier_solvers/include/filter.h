@@ -11,11 +11,45 @@ public:
         off
     };
 
+    std::string to_string() const {
+        switch (state) {
+        case on:
+            return "on";
+        case off:
+            return "off";
+        default:
+            return "off";
+        }
+    }
+
+    void apply(Grid3d& gr) {
+        if (state == on) applyFilter(gr);
+    }
+
+    void on() {
+        state = on;
+    }
+
+    void off() {
+        state = off;
+    }
+
+protected:
+    virtual void applyFilter(Grid3d& gr) = 0;
+
+    State state = off;
+};
+
+
+class LowFreqFilter {
+private:
     vec3<int> maskWidth;
     vec3<int> numZeroFreq;
 
-    Filter(vec3<int> _maskWidth, vec3<int> _numZeroFreq) :maskWidth(_maskWidth), numZeroFreq(_numZeroFreq) {}
-    Filter() {}
+public:
+    LowFreqFilter(vec3<int> _maskWidth, vec3<int> _numZeroFreq) :
+        maskWidth(_maskWidth), numZeroFreq(_numZeroFreq) {}
+    LowFreqFilter() {}
 
     void setParams(vec3<int> _maskWidth, vec3<int> _numZeroFreq) {
         maskWidth = _maskWidth;
@@ -34,22 +68,7 @@ public:
         return numZeroFreq;
     }
 
-    State state = off;
-    void operator() (Grid3d& gr) {
-        if (state == on) lowFrequencyFilter(gr);
-    }
-    std::string to_string() const {
-        switch (state) {
-        case on:
-            return "on";
-        case off:
-            return "off";
-        default:
-            return "off";
-        }
-    }
-
-private:
-    void lowFrequencyFilter(Grid3d& gr);
+protected:
+    void applyFilter(Grid3d& gr);
     void filter1d(Grid3d& gr, int maskWidth_2, int numZeroFreq_2, Coordinate coord);
 };
