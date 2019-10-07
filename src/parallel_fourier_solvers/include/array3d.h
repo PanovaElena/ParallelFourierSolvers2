@@ -139,7 +139,7 @@ inline T Array3d<T>::operator()(int index) const {
 template<class T>
 inline int Array3d<T>::getIndex(int i, int j, int k) const
 {
-    return (i*n.x + j)*n.y + k;
+    return (i*n.y + j)*n.z + k;
 }
 
 template<class T>
