@@ -7,64 +7,47 @@
 #define COURANT_CONDITION_PSTD(d) (sqrt(2)*(d)/(constants::c*constants::pi))
 #define COURANT_CONDITION_FDTD(d) ((d)/(constants::c*sqrt(2)))
 
-inline int mod(int a, int b) {
-    return (a + b) % b;
-}
-
 class FieldSolver {
 protected:
-    std::unique_ptr<Grid3d> grid;
+    std::shared_ptr<Grid3d> grid;
+
 public:
     FieldSolver() {}
-    FieldSolver(Grid3d * grid) {
-        this->grid.reset(grid);
+    FieldSolver(Grid3d& grid) {
+        this->grid.reset(&grid);
     }
     virtual void operator() (double dt) = 0;
 
     virtual void doFourierTransform(Direction dir) {}
 
-    vec3<vec3<>> getCoordOffset(Field field) const {
-        switch (field) {
-        case E:
-            return shiftE;
-        case B:
-            return shiftB;
-        default:
-            return shiftJ;
-        }
+    vec3<vec3<>> getSpatialShift(Field field) const {
+        return shiftSp[field];
     }
 
-    double getTimeOffset(Field field) const {
-        switch (field) {
-        case E:
-            return shiftEt;
-        case B:
-            return shiftBt;
-        default:
-            return shiftJt;
-        }
+    double getTimeShift(Field field) const {
+        return shiftT[field];
     }
 
-    double shiftEt = 0, shiftBt = 0, shiftJt = 0;
-    vec3<vec3<>> shiftE, shiftB, shiftJ;
+    vec3<> shiftT;
+    vec3<vec3<vec3<>>> shiftSp;
 };
 
 class RealFieldSolver : public FieldSolver {
 public:
     RealFieldSolver() {}
-    RealFieldSolver(Grid3d * grid) : FieldSolver(grid) {}
+    RealFieldSolver(Grid3d& grid) : FieldSolver(grid) {}
 };
 
 class FieldSolverFDTD: public RealFieldSolver {
 public:
     FieldSolverFDTD() {}
-    FieldSolverFDTD(Grid3d * grid) :
+    FieldSolverFDTD(Grid3d& grid) :
         RealFieldSolver(grid) {
-        shiftBt = -0.5;
-        shiftEt = 0.5;
-        shiftE = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
-        shiftB = vec3<vec3<>>(vec3<>(0, 0.5, 0.5), vec3<>(0.5, 0, 0.5), vec3<>(0.5, 0.5, 0));
-        shiftJ = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
+        shiftT[B] = -0.5;
+        shiftT[E] = 0.5;
+        shiftSp[E] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
+        shiftSp[B] = vec3<vec3<>>(vec3<>(0, 0.5, 0.5), vec3<>(0.5, 0, 0.5), vec3<>(0.5, 0.5, 0));
+        shiftSp[J] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
     }
     void operator() (double dt) override;
 protected:
@@ -73,7 +56,8 @@ protected:
 };
 
 class FourierFieldSolver : public FieldSolver {
-    std::unique_ptr<FourierTransformOfGrid> fourierTransform;
+    std::shared_ptr<FourierTransformOfGrid> fourierTransform;
+
 public:
     FourierFieldSolver() {}
     FourierFieldSolver(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) {
@@ -107,7 +91,7 @@ public:
     FieldSolverPSATD() {}
     FieldSolverPSATD(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) :
         FourierFieldSolver(grid, ifMpi, globalSize) {
-        shiftJt = 0.5;
+        shiftT[J] = 0.5;
     }
     void operator() (double dt) override;
 };
@@ -117,8 +101,8 @@ public:
     FieldSolverPSTD() {}
     FieldSolverPSTD(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) :
         FourierFieldSolver(grid, ifMpi, globalSize) {
-        shiftBt = 0.5;
-        shiftJt = 0.5;
+        shiftT[B] = 0.5;
+        shiftT[J] = 0.5;
     }
     void operator() (double dt) override;
 protected:
