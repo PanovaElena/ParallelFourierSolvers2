@@ -3,8 +3,9 @@
 #include "grid3d.h"
 #include "my_complex.h"
 #include "physical_constants.h"
+#include "field_solver.h"
 
-class test_lag : public testing::Test {
+class testLag : public testing::Test {
 public:
 
     int n = 6;
@@ -14,37 +15,58 @@ public:
     double d = (b - a) / n;
     int step = 1;
     double c = step * d;
+    FourierTransformOfGrid ft;
 
-    test_lag() : gr({ n, n, n }, { a, a, a }, { b, b, b }) {
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                for (int k = 0; k < n; k++)
-                    gr.E.x(i, j, k) = f(i, j, k);
+    FieldFunc fE;
+    FieldFunc fB;
+    FieldFunc fJ;
+
+    void initializeFieldFuncs() {
+        fE = [this](vec3<int> index, double t) {
+            double v = A * sin(2 * constants::pi*(index.x*gr.getStep().x +
+                index.y * gr.getStep().y + index.z * gr.getStep().z) / (b - a));
+            return vec3<>(v, 0, 0);
+        };
+
+        fB = [this](vec3<int> index, double t) { return vec3<>(0); };
+
+        fJ = [this](vec3<int> index, double t) {return vec3<>(0); };
     }
 
-    double f(int i, int j, int k) {
-        return A * sin(2 * constants::pi*(i*gr.getStep().x + j * gr.getStep().y + k * gr.getStep().z) / (b - a));
+    double f(vec3<int> index) {
+        return A * sin(2 * constants::pi*(index.x*gr.getStep().x +
+            index.y * gr.getStep().y + index.z * gr.getStep().z) / (b - a));
+    }
+
+    testLag() {
+        vec3<int> n = vec3<int>(this->n);
+        vec3<> a = vec3<>(this->a), b = vec3<>(this->b),
+            d = (b - a) / (vec3<>)n;
+        initializeFieldFuncs();
+        GridParams gp(a, d, n, fE, fB, fJ);
+        gr.initialize(gp);
+        ft.initialize(gr);
     }
 
     void MyTestBodyLag() {
-        fourierTransform(gr, RtoC);
+        ft.fourierTransform(gr, RtoC);
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
                 for (int k = 0; k < n / 2 + 1; k++) {
-                    vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), gr);
+                    vec3<MyComplex> K = FourierFieldSolver::getFreqVector(vec3<int>(i, j, k), gr);
                     gr.EF.x(i, j, k) *= MyComplex::getTrig(1, -c * (K.x + K.y + K.z));
                 }
-        fourierTransform(gr, CtoR);
+        ft.fourierTransform(gr, CtoR);
     }
 
 };
 
-TEST_F(test_lag, lag_is_correct) {
+TEST_F(testLag, lag_is_correct) {
     MyTestBodyLag();
 
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
             for (int k = 0; k < n; k++) {
-                ASSERT_NEAR(f(i - step, j - step, k - step), gr.E.x(i, j, k), 1E-7);
+                ASSERT_NEAR(f({ i - step, j - step, k - step }), gr.E.x(i, j, k), 1E-7);
             }
 }

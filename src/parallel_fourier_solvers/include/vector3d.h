@@ -15,8 +15,9 @@ inline double absSquare(MyComplex a) {
 }
 
 template <class T = double>
-struct vec3
+class vec3
 {
+public:
     T x;
     T y;
     T z;

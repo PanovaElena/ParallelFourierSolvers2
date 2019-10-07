@@ -2,8 +2,8 @@
 
 Stat ParallelFourierSolver::initialize(Grid3d & globalGrid, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
+    const ParallelScheme& scheme, FieldSolver& fieldSolver,
+    FileWriter& fileWriter)
 {
     return init(globalGrid.getGridParams(), guardSize, mask, filter,
         mpiSize, scheme, fieldSolver, fileWriter);
@@ -11,8 +11,8 @@ Stat ParallelFourierSolver::initialize(Grid3d & globalGrid, vec3<int> guardSize,
 
 Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
+    const ParallelScheme& scheme, FieldSolver& fieldSolver,
+    FileWriter& fileWriter)
 {
     return init(globalGP, guardSize, mask, filter,
         mpiSize, scheme, fieldSolver, fileWriter);
@@ -20,8 +20,8 @@ Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> gu
 
 Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> size,
-    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
+    const ParallelScheme& scheme, FieldSolver& fieldSolver,
+    FileWriter& fileWriter)
 {
     this->scheme.reset(scheme.clone());
     this->mask.reset(mask.clone());

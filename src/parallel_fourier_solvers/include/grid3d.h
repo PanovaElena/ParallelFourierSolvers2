@@ -70,6 +70,7 @@ public:
     Grid3d& operator=(const Grid3d& grid2);
 
     void initialize(const GridParams& params);
+    void setFields();
 
     vec3<int> sizeReal() const;
     vec3<int> sizeComplex() const;

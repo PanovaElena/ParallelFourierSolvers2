@@ -38,14 +38,14 @@ public:
     // common localGrid on zero process
     Stat initialize(Grid3d& globalGrid, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-        const FileWriter& fileWriter);
+        const ParallelScheme& scheme, FieldSolver& fieldSolver,
+        FileWriter& fileWriter);
 
     // without common localGrid
     Stat initialize(const GridParams& globalGP, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-        const FileWriter& fileWriter);
+        const ParallelScheme& scheme, FieldSolver& fieldSolver,
+        FileWriter& fileWriter);
 
     vec3<int> getFullSize() {
         return domainSize + 2 * guardSize;
@@ -59,8 +59,8 @@ public:
 private:
     Stat init(const GridParams& globalGP, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> size,
-        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-        const FileWriter& fileWriter);
+        const ParallelScheme& scheme, FieldSolver& fieldSolver,
+        FileWriter& fileWriter);
 
     Stat validate();  // only after processInfo init
 

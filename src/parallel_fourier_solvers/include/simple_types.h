@@ -34,7 +34,6 @@ enum Type {
 };
 
 enum Direction {
-    None,
     RtoC,
     CtoR
 };

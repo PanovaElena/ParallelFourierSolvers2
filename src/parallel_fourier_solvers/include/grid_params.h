@@ -23,7 +23,7 @@ struct GridParams {
         initialize(a, d, n);
     }
 
-    /*GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
+    GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
         FieldFunc fE, FieldFunc fB, FieldFunc fJ)
     {
         initialize(a, d, n, fE, fB, fJ);
@@ -33,8 +33,8 @@ struct GridParams {
         FieldFunc fE, FieldFunc fB, FieldFunc fJ,
         const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
     {
-        initialize(a, d, n, fE, fB, fJ, shiftT, shiftSp);
-    }*/
+        initialize(a, d, n, fE, fB, fJ, shiftSp, shiftT);
+    }
 
     void initialize(vec3<> a, vec3<> d, vec3<int> n)
     {
@@ -43,7 +43,7 @@ struct GridParams {
         this->n = n;
     }
 
-    /*void initialize(vec3<> a, vec3<> d, vec3<int> n,
+    void initialize(vec3<> a, vec3<> d, vec3<int> n,
         FieldFunc fE, FieldFunc fB, FieldFunc fJ)
     {
         initialize(a, d, n);
@@ -55,8 +55,8 @@ struct GridParams {
         const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
     {
         initialize(a, d, n, fE, fB, fJ);
-        setShifts(shiftT, shiftSp);
-    }*/
+        setShifts(shiftSp, shiftT);
+    }
 
     void setFieldFuncs(FieldFunc fE, FieldFunc fB, FieldFunc fJ) {
         this->fE = fE;
@@ -64,10 +64,10 @@ struct GridParams {
         this->fJ = fJ;
     }
 
-    void setShifts(const vec3<vec3<vec3<double>>>& shiftSp,
-        const vec3<double>& shiftT) {
-        this->shiftT = shiftT;
+    void setShifts(const vec3<vec3<vec3<>>>& shiftSp,
+        const vec3<>& shiftT) {
         this->shiftSp = shiftSp;
+        this->shiftT = shiftT;
     }
 
     vec3<> b() const {

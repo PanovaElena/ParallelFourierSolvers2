@@ -21,28 +21,28 @@ TEST(TestVector, scalar_product1) {
     vec3<double> a = vec3<double>(1, 2, 3);
     a = a * 3;
     vec3<double> b = vec3<double>(3, 6, 9);
-    EXPECT_TRUE(a.get_x() == b.get_x() && a.get_y() == b.get_y() && a.get_z() == b.get_z());
+    EXPECT_TRUE(a.x == b.x && a.y == b.y && a.z == b.z);
 }
 
 TEST(TestVector, scalar_product2) {
     vec3<double> a = vec3<double>(0, 0, 0);
     a = a * 3;
     vec3<double> b = vec3<double>(0, 0, 0);
-    EXPECT_TRUE(a.get_x() == b.get_x() && a.get_y() == b.get_y() && a.get_z() == b.get_z());
+    EXPECT_TRUE(a.x == b.x && a.y == b.y && a.z == b.z);
 }
 
 TEST(TestVector, scalar_product3) {
     vec3<double> a = vec3<double>(1, 1, 1);
     a = a * 0;
     vec3<double> b = vec3<double>(0, 0, 0);
-    EXPECT_TRUE(a.get_x() == b.get_x() && a.get_y() == b.get_y() && a.get_z() == b.get_z());
+    EXPECT_TRUE(a.x == b.x && a.y == b.y && a.z == b.z);
 }
 
 TEST(TestVector, scalar_product4) {
     vec3<double> a = vec3<double>(1, 1, 1);
     a = a + a;
     vec3<double> b = vec3<double>(2, 2, 2);
-    EXPECT_TRUE(a.get_x() == b.get_x() && a.get_y() == b.get_y() && a.get_z() == b.get_z());
+    EXPECT_TRUE(a.x == b.x && a.y == b.y && a.z == b.z);
 }
 
 TEST(TestVector, scalar_product_double) {
@@ -51,8 +51,8 @@ TEST(TestVector, scalar_product_double) {
 }
 
 TEST(TestVector, scalar_product_complex) {
-    vec3<MyComplex> a(complex_i, complex_i, complex_i);
-    vec3<MyComplex> b(complex_i, complex_i, complex_i);
+    vec3<MyComplex> a(MyComplex::i(), MyComplex::i(), MyComplex::i());
+    vec3<MyComplex> b(MyComplex::i(), MyComplex::i(), MyComplex::i());
     ASSERT_EQ(vec3<MyComplex>::dot(a, b), MyComplex(-3, 0));
 }
 
@@ -62,23 +62,26 @@ TEST(TestVector, vector_product_double) {
 }
 
 TEST(TestVector, vector_product_complex) {
-    vec3<MyComplex> a(complex_i, complex_0, complex_0);
-    vec3<MyComplex> b(complex_0, complex_i, complex_0);
-    ASSERT_EQ(vec3<MyComplex>::cross(a, b), vec3<MyComplex>(complex_0, complex_0, MyComplex(-1, 0)));
+    vec3<MyComplex> a(MyComplex::i(), MyComplex(0,0), MyComplex(0, 0));
+    vec3<MyComplex> b(MyComplex(0, 0), MyComplex::i(), MyComplex(0, 0));
+    ASSERT_EQ(vec3<MyComplex>::cross(a, b), 
+        vec3<MyComplex>(MyComplex(0, 0), MyComplex(0, 0), MyComplex(-1, 0)));
 }
 
 TEST(TestVector, vector_product_complex_2) {
-    vec3<MyComplex> a(complex_i, complex_i*(-1), complex_i);
-    vec3<MyComplex> b(complex_i*(-1), complex_i, complex_i*(-1));
-    ASSERT_EQ(vec3<MyComplex>::cross(a, b), vec3<MyComplex>(complex_0, complex_0, complex_0));
+    vec3<MyComplex> a(MyComplex::i(), MyComplex::i()*MyComplex(-1), MyComplex::i());
+    vec3<MyComplex> b(MyComplex::i()*MyComplex(-1), MyComplex::i(),
+        MyComplex::i()*MyComplex(-1));
+    ASSERT_EQ(vec3<MyComplex>::cross(a, b), vec3<MyComplex>(MyComplex(0, 0),
+        MyComplex(0, 0), MyComplex(0, 0)));
 }
 
 TEST(TestVector, vector_product_complex_vectors_are_orthogonal) {
     vec3<MyComplex> a(MyComplex(1, 2), MyComplex(4, 7), MyComplex(1, 3));
     vec3<MyComplex> b(MyComplex(3, 9), MyComplex(2, 2), MyComplex(6, 7));
     vec3<MyComplex> c = vec3<MyComplex>::cross(a, b);
-    ASSERT_EQ(complex_0, vec3<MyComplex>::dot(a, c));
-    ASSERT_EQ(complex_0, vec3<MyComplex>::dot(b, c));
+    ASSERT_EQ(MyComplex(0, 0), vec3<MyComplex>::dot(a, c));
+    ASSERT_EQ(MyComplex(0, 0), vec3<MyComplex>::dot(b, c));
 }
 
 TEST(TestVector, decomposition_of_vector_into_components) {
@@ -117,12 +120,12 @@ TEST(TestVector, normalize_complex_2) {
 
     ASSERT_DOUBLE_EQ(b.getNorm(), sqrt(166));
 
-    ASSERT_DOUBLE_EQ(a.get_x().getReal(), b.get_x().getReal()*(1.0 / sqrt(166)));
-    ASSERT_DOUBLE_EQ(a.get_x().getImag(), b.get_x().getImag()*(1.0 / sqrt(166)));
-    ASSERT_DOUBLE_EQ(a.get_y().getReal(), b.get_y().getReal()*(1.0 / sqrt(166)));
-    ASSERT_DOUBLE_EQ(a.get_y().getImag(), b.get_y().getImag()*(1.0 / sqrt(166)));
-    ASSERT_DOUBLE_EQ(a.get_z().getReal(), b.get_z().getReal()*(1.0 / sqrt(166)));
-    ASSERT_DOUBLE_EQ(a.get_z().getImag(), b.get_z().getImag()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.x.getReal(), b.x.getReal()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.x.getImag(), b.x.getImag()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.y.getReal(), b.y.getReal()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.y.getImag(), b.y.getImag()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.z.getReal(), b.z.getReal()*(1.0 / sqrt(166)));
+    ASSERT_DOUBLE_EQ(a.z.getImag(), b.z.getImag()*(1.0 / sqrt(166)));
 }
 
 

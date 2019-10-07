@@ -10,42 +10,47 @@ class TestFourierTransform : public testing::Test {
 public:
     int nx = 10, ny = 5, nz = 3;
     double X = 6, Y = 8, Z = 10;
+    static const int A = 10;
+    FourierTransformOfGrid ft;
     Grid3d grid;
 
-    double f(int index, Coordinate coord) {
-        const double A = 10;
-        switch (coord) {
-        case Coordinate::x:
-            return A * sin(2 * constants::pi*index / nx);
-        case Coordinate::y:
-            return A * sin(2 * constants::pi*index / nz);
-        case Coordinate::z:
-            return A * sin(2 * constants::pi*index / ny);
-        }
+    FieldFunc fE;
+    FieldFunc fB;
+    FieldFunc fJ;
+
+    void initializeFieldFuncs() {
+        fE = [this](vec3<int> index, double t) {
+            return vec3<>(A * sin(2 * constants::pi*index.x / nx),
+                A * sin(2 * constants::pi*index.x / nz),
+                A * sin(2 * constants::pi*index.x / ny));
+        };
+
+        fB = [this](vec3<int> index, double t) {
+            return vec3<>(A * sin(2 * constants::pi*index.x / nx),
+                A * sin(2 * constants::pi*index.x / nz),
+                A * sin(2 * constants::pi*index.x / ny));
+        };
+
+        fJ = [this](vec3<int> index, double t) {return vec3<>(0); };
     }
 
-    TestFourierTransform() : grid({ nx, ny, nz }, { 0, 0, 0 }, { X, Y, Z }) {
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                for (int k = 0; k < nz; k++) {
-                    double x = f(k, Coordinate::x);
-                    double y = f(i, Coordinate::y);
-                    double z = f(j, Coordinate::z);
-
-                    grid.E[0](i, j, k) = grid.B[0](i, j, k) = x;
-                    grid.E[1](i, j, k) = grid.B[1](i, j, k) = y;
-                    grid.E[2](i, j, k) = grid.B[2](i, j, k) = z;
-                }
+    TestFourierTransform() {
+        vec3<int> n = { nx, ny, nz };
+        vec3<> a = { 0, 0, 0 }, b = { X, Y, Z }, d = (b - a) / (vec3<>)n;
+        initializeFieldFuncs();
+        GridParams gp(a, d, n, fE, fB, fJ);
+        grid.initialize(gp);
+        ft.initialize(grid);
     }
 
     void MyTestBody(Field field, Coordinate coord) {
 
-        MemberOfNode p = getMemberPtrField<double>(field);
+        FieldOfGrid p = getMemberPtrField<double>(field);
         MemberOfField m = getMemberPtrFieldCoord<double>(coord);
 
         Grid3d grid2 = grid;
 
-        fourierTransform(grid, field, coord, RtoC);
+        ft.fourierTransform(grid, RtoC);
 
         bool flag = true;
         for (int i = 0; i < grid.sizeReal().x; i++)
@@ -53,10 +58,8 @@ public:
                 for (int k = 0; k < grid.sizeReal().z; k++)
                     if ((grid.*p.*m)(i, j, k) != (grid2.*p.*m)(i, j, k))
                         flag = false;
-        if (flag)
-            std::cout << "NOT SPOIL" << std::endl;
 
-        fourierTransform(grid, field, coord, CtoR);
+        ft.fourierTransform(grid, CtoR);
 
         for (int i = 0; i < grid.sizeReal().x; i++)
             for (int j = 0; j < grid.sizeReal().y; j++)
@@ -66,11 +69,12 @@ public:
 };
 
 TEST_F(TestFourierTransform, no_throws_RtoC) {
-    ASSERT_NO_THROW(fourierTransform(grid, E, x, RtoC));
+    ASSERT_NO_THROW(ft.fourierTransform(grid, RtoC));
 }
 
 TEST_F(TestFourierTransform, no_throws_CtoR) {
-    ASSERT_NO_THROW(fourierTransform(grid, E, x, CtoR));
+    ft.fourierTransform(grid, RtoC);
+    ASSERT_NO_THROW(ft.fourierTransform(grid, CtoR));
 }
 
 TEST_F(TestFourierTransform, transform_correctly_Ex) {
@@ -109,7 +113,7 @@ TEST_F(TestFourierTransform, fourier_transform_writes_data_correctly_to_grid) {
         (fftw_complex*)&(arr1[0]), (fftw_complex*)&(arr2[0]), FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute(plan);
 
-    fourierTransform(grid, RtoC);
+    ft.fourierTransform(grid, RtoC);
 
     for (int i = 0; i < grid.sizeComplex().x; i++)
         for (int j = 0; j < grid.sizeComplex().y; j++)

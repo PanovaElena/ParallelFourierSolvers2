@@ -82,7 +82,6 @@ protected:
 
 class FourierFieldSolver : public FieldSolver {
     std::shared_ptr<FourierTransformOfGrid> fourierTransform;
-    bool ifMpiF = false;
 
 public:
     FourierFieldSolver() {}
@@ -99,7 +98,7 @@ public:
         fourierTransform.reset(new FourierMpiTransformOfGrid(*grid, globalSize));
     }
 
-    /*static*/ vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
+    static vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
         MyComplex v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
             (gr.getEnd().x - gr.getStart().x);
         MyComplex v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /

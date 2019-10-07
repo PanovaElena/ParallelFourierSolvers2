@@ -11,8 +11,8 @@ public:
         imag = 0;
     }
     MyComplex(double real, double imag) {
-        real = real;
-        imag = imag;
+        this->real = real;
+        this->imag = imag;
     }
     MyComplex(double a) {
         real = a;
@@ -26,10 +26,10 @@ public:
     }
 
     void setReal(double real) {
-        real = real;
+        this->real = real;
     }
     void setImag(double imag) {
-        imag = imag;
+        this->imag = imag;
     }
     double getReal() const {
         return real;

@@ -14,11 +14,12 @@ protected:
 public:
     FourierTransformOfGrid() {}
     FourierTransformOfGrid(Grid3d& grid) {
-        this->globalSize = grid.sizeReal();
         initialize(grid);
     }
     void initialize(Grid3d& grid) {
+        this->globalSize = grid.sizeReal();
         createPlans(grid);
+        grid.setFields();
     }
 
     void fourierTransform(Grid3d& grid, Direction dir);
@@ -41,6 +42,7 @@ public:
     void initialize(Grid3d& grid, const vec3<int> globalSize) {
         this->globalSize = globalSize;
         createPlans(grid);
+        grid.setFields();
     }
 
 protected:
