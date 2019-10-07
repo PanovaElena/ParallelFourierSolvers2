@@ -6,11 +6,6 @@
 
 class Filter {
 public:
-    enum State {
-        on,
-        off
-    };
-
     std::string to_string() const {
         switch (state) {
         case on:

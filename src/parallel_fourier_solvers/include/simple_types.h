@@ -51,6 +51,11 @@ enum Dimension {
     d3
 };
 
+enum State {
+    on,
+    off
+};
+
 enum Field {
     E,
     B,
