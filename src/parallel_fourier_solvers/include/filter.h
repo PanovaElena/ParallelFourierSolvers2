@@ -26,13 +26,15 @@ public:
         if (state == on) applyFilter(gr);
     }
 
-    void on() {
+    void turnOn() {
         state = on;
     }
 
-    void off() {
+    void turnOff() {
         state = off;
     }
+
+    virtual Filter* clone() const = 0;
 
 protected:
     virtual void applyFilter(Grid3d& gr) = 0;
@@ -41,7 +43,7 @@ protected:
 };
 
 
-class LowFreqFilter {
+class LowFreqFilter: public Filter {
 private:
     vec3<int> maskWidth;
     vec3<int> numZeroFreq;
@@ -68,7 +70,11 @@ public:
         return numZeroFreq;
     }
 
+    Filter* clone() const override {
+        return new LowFreqFilter(*this);
+    }
+
 protected:
-    void applyFilter(Grid3d& gr);
+    void applyFilter(Grid3d& gr) override;
     void filter1d(Grid3d& gr, int maskWidth_2, int numZeroFreq_2, Coordinate coord);
 };
