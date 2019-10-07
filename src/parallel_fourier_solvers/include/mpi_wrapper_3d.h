@@ -1,89 +1,112 @@
 #pragma once
+#include <algorithm>
 #include "mpi_wrapper.h"
 #include "vector3d.h"
 #include "status.h"
+#include "simple_types.h"
+#include "array3d.h"
 
-class MPIWrapper3d {
-    int sizeX = 1, sizeY = 1, sizeZ = 1;
+class MPIWrapper3d : public MPIWrapper {
+protected:
+    vec3<int> size;
+    MPI_Comm cartComm;
+
 public:
-    MPIWrapper3d() {}
+    MPIWrapper3d() : size(1, 1, 1) {}
     MPIWrapper3d(vec3<int> np) {
-        sizeX = np.x;
-        sizeY = np.y;
-        sizeZ = np.z;
+        initialize(np);
     }
 
-    Status checkAndSetSize(int _sizeX, int _sizeY, int _sizeZ) {
-        if (_sizeX*_sizeY*_sizeZ != MPIWrapper::MPISize())
-            return Status::ERROR;
-        setSize(_sizeX, _sizeY, _sizeZ);
-        return Status::OK;
+    Stat initialize(vec3<int> mpiSize);
+
+    Stat checkSize(vec3<int> size);
+
+    vec3<int> getSize() const {
+        return size;
     }
 
-    void setSize(int _sizeX, int _sizeY, int _sizeZ) {
-        sizeX = _sizeX;
-        sizeY = _sizeY;
-        sizeZ = _sizeZ;
+    int getScalarSize() const {
+        return MPIWrapper::MPISize(cartComm);
     }
 
-    int getScalarRank(vec3<int> rank) {
-        return (rank.x*sizeY + rank.y)*sizeZ + rank.z;
-    }
-    vec3<int> getVecRank(int rank) {
-        int z = rank % sizeZ;
-        int tmp = rank / sizeZ;
-        int y = tmp % sizeY;
-        int x = tmp / sizeY;
-        return vec3<int>(x, y, z);
-    }
-    int getTag(vec3<int> dim) {
-        int N = 3;
-        dim = dim + vec3<int>(N);
-        return (dim.x*N + dim.y)*N + dim.z;
+    vec3<int> getRank() const {
+        int coords[3];
+        MPI_Cart_coords(cartComm, MPIWrapper::MPIRank(cartComm), 3, coords);
+        return vec3<int>(coords[0], coords[1], coords[2]);
     }
 
-    vec3<int> MPISize() {
-        return vec3<int>(sizeX, sizeY, sizeZ);
-    }
-    vec3<int> MPIRank() {
-        int rank = MPIWrapper::MPIRank();
-        return getVecRank(rank);
-    }
-    void MPIISend(double*& buf, int size, vec3<int> dest, int tag, MPI_Request& request) {
-        MPIWrapper::MPIISend(buf, size, getScalarRank(dest), tag, request);
-    }
-    void MPIRecv(double*& buf, int size, vec3<int> source, int tag) {
-        MPIWrapper::MPIRecv(buf, size, getScalarRank(source), tag);
+    int getScalarRank() const {
+        return MPIRank(cartComm);
     }
 
-    void MPIISendSubarray(Array3d<double>& arr, vec3<int> n1, vec3<int> n2,
-        vec3<int> dest, int tag, MPI_Request& request) {
-        MPI_Datatype mysubarray;
-
-        int starts[3] = { n1.x, n1.y, n1.z };
-        int subsizes[3] = { n2.x - n1.x, n2.y - n1.y, n2.z - n1.z };
-        int bigsizes[3] = { arr.size().x, arr.size().y, arr.size().z };
-
-        MPI_Type_create_subarray(3, bigsizes, subsizes, starts,
-            MPI_ORDER_C, MPI_DOUBLE, &mysubarray);
-        MPI_Type_commit(&mysubarray);
-
-        MPI_Isend(&(arr[0]), 1, mysubarray, getScalarRank(dest), tag, MPI_COMM_WORLD, &request);
-        MPI_Type_free(&mysubarray);
+    void MPIISend(double*& buf, vec3<int> dest, int tag, MPI_Request& request) const {
+        MPIWrapper::MPIISend(buf, getScalarSize(), getScalarRank(), tag, request, cartComm);
     }
-    void MPIIRecvSubarray(Array3d<double>& arr, vec3<int> n1, vec3<int> n2,
-        vec3<int> source, int tag) {
-        MPI_Datatype mysubarray;
 
-        int starts[3] = { n1.x, n1.y, n1.z };
-        int subsizes[3] = { n2.x - n1.x, n2.y - n1.y, n2.z - n1.z };
-        int bigsizes[3] = { arr.size().x, arr.size().y, arr.size().z };
-
-        MPI_Type_create_subarray(3, bigsizes, subsizes, starts,
-            MPI_ORDER_C, MPI_DOUBLE, &mysubarray);
-        MPI_Type_commit(&mysubarray);
-
-        MPI_Recv(&(arr[0]), 1, mysubarray, getScalarRank(source), tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Type_free(&mysubarray);
+    void MPIRecv(double*& buf, vec3<int> source, int tag) const {
+        MPIWrapper::MPIRecv(buf, getScalarSize(), getScalarRank(), tag, cartComm);
     }
+
+    void MPIBarrier() {
+        MPIWrapper::MPIBarrier(cartComm);
+    }
+
+    Stat MPIISendSubarray(Array3d<double>& arr, Boards boards,
+        vec3<int> dest, int tag, MPI_Request& request) const;
+
+    Stat MPIRecvSubarray(Array3d<double>& arr, Boards boards,
+        vec3<int> source, int tag) const;
+
+protected:
+
+    Stat createSubarray(MPI_Datatype& subarray, Boards board,
+        vec3<int> arrSize) const;
+
+    void freeSubarray(MPI_Datatype& subarray) const {
+        MPI_Type_free(&subarray);
+    }
+
+    void createCartTopology();
+};
+
+
+class MPIWrapperGrid: public MPIWrapper3d {
+    vec3<Pair<MPI_Datatype>> sendTypes;
+    vec3<Pair<MPI_Datatype>> recvTypes;
+    vec3<Pair<Boards>> sendBoards;
+    vec3<Pair<Boards>> recvBoards;
+    vec3<Array3d<double>> tmpArray;
+    Operation operation;
+
+public:
+    MPIWrapperGrid(): MPIWrapper3d(vec3<int>(1, 1, 1)) {}
+    MPIWrapperGrid(vec3<int> np): MPIWrapper3d(np) {}
+    ~MPIWrapperGrid() {
+        freeSubarrays();
+    }
+
+    Stat initialize(vec3<int> mpiSize) {
+        if (MPIWrapper3d::initialize(mpiSize) == Stat::ERROR)
+            return Stat::ERROR;
+        return Stat::OK;
+    }
+
+    Stat initialize(vec3<int> mpiSize, vec3<Pair<Boards>> sendBoards,
+        vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
+
+    Stat initializeGuardExchangeInfo(vec3<Pair<Boards>> sendBoards,
+        vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
+
+    void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, MPIRequest& request) const;
+    void recvGuard(Array3d<double>& arr, Coordinate coord, Side side) const;
+
+protected:
+
+    Stat createSubarrays(vec3<int> arrSize);
+    void freeSubarrays();
+
+    int getNeighbourRank(Coordinate coord, Side side) const;
+
+    void accumulateLocalSubarrays(Array3d<double>& tmpArr,
+        Array3d<double>& arr, const Boards& boards, Operation op) const;
 };

@@ -2,25 +2,29 @@
 #include "mpi.h"
 #include <iostream>
 #include <string>
+#include <map>
 #include "array3d.h"
+#include "status.h"
 
 class MPIWrapper {
 public:
-    static int MPISize() {
+    static int MPISize(MPI_Comm comm = MPI_COMM_WORLD) {
         int size;
-        MPI_Comm_size(MPI_COMM_WORLD, &size);
+        MPI_Comm_size(comm, &size);
         return size;
     }
-    static int MPIRank() {
+    static int MPIRank(MPI_Comm comm = MPI_COMM_WORLD) {
         int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_rank(comm, &rank);
         return rank;
     }
-    static void MPIISend(double*& buf, int size, int dest, int tag, MPI_Request& request) {
-        MPI_Isend(buf, size, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &request);
+    static void MPIISend(double*& buf, int size, int dest, int tag,
+        MPI_Request& request, MPI_Comm comm = MPI_COMM_WORLD) {
+        MPI_Isend(buf, size, MPI_DOUBLE, dest, tag, comm, &request);
     }
-    static void  MPIRecv(double*& buf, int size, int source, int tag) {
-        MPI_Recv(buf, size, MPI_DOUBLE, source, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    static void  MPIRecv(double*& buf, int size, int source, int tag,
+        MPI_Comm comm = MPI_COMM_WORLD) {
+        MPI_Recv(buf, size, MPI_DOUBLE, source, tag, comm, MPI_STATUS_IGNORE);
     }
     static void MPIWait(MPI_Request& request) {
         MPI_Status status;
@@ -32,11 +36,13 @@ public:
     static void MPIFinalize() {
         MPI_Finalize();
     }
-    static void MPIBarrier() {
-        MPI_Barrier(MPI_COMM_WORLD);
+    static void MPIBarrier(MPI_Comm comm = MPI_COMM_WORLD) {
+        MPI_Barrier(comm);
     }
 
     static void showMessage(std::string message) {
         std::cout << "rank " << MPIRank() << ": " << message << std::endl;
     }
+
+    typedef MPI_Request MPIRequest;
 };
