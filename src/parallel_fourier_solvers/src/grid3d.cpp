@@ -3,18 +3,11 @@
 Grid3d::Grid3d() :E(), B(), J(), EF(), BF(), JF() {}
 
 Grid3d::Grid3d(const Grid3d& gr) {
-    initialize(gr.n, gr.a, gr.b);
-
-    E = gr.E;
-    B = gr.B;
-    J = gr.J;
-    EF = gr.EF;
-    BF = gr.BF;
-    JF = gr.JF;
+    initialize(gridParams);
 }
 
-Grid3d::Grid3d(vec3<int> n, vec3<double> a, vec3<double> b) {
-    initialize(n, a, b);
+Grid3d::Grid3d(const GridParams& gridParams) {
+    initialize(gridParams);
 }
 
 void Grid3d::clearGrid() {
@@ -30,34 +23,42 @@ Grid3d::~Grid3d() {
     clearGrid();
 }
 
-void Grid3d::initialize(vec3<int> _n, vec3<double> _a, vec3<double> _b) {
+void Grid3d::initialize(const GridParams& gridParams) {
     clearGrid();
 
-    n = _n; a = _a; b = _b;
+    this->gridParams = gridParams;
 
-    d = (b - a) / (vec3<double>)n;
-
+    vec3<int> n = gridParams.n;
     E.initialize(n);
     B.initialize(n);
     J.initialize(n);
     EF.initialize({ n.x, n.y, n.z / 2 + 1 });
     BF.initialize({ n.x, n.y, n.z / 2 + 1 });
     JF.initialize({ n.x, n.y, n.z / 2 + 1 });
+
+    for (int i = 0; i < n.x; i++)
+        for (int j = 0; j < n.y; j++)
+            for (int k = 0; i < n.z; k++) {
+                E.write(i, j, k, gridParams.fE({ i,j,k }, 0.0));
+                B.write(i, j, k, gridParams.fB({ i,j,k }, 0.0));
+                J.write(i, j, k, gridParams.fJ({ i,j,k }, 0.0));
+            }
+
 }
 
 int Grid3d::operator==(const Grid3d& gr) {
-    if (a.x != gr.a.x) return 0;
-    if (a.y != gr.a.y) return 0;
-    if (a.z != gr.a.z) return 0;
-    if (b.x != gr.b.x) return 0;
-    if (b.y != gr.b.y) return 0;
-    if (b.z != gr.b.z) return 0;
+    if (gridParams.a != gr.gridParams.a)
+        return 0;
+    if (gridParams.d != gr.gridParams.d)
+        return 0;
+    if (gridParams.n != gr.gridParams.n)
+        return 0;
 
     return (E == gr.E && B == gr.B && J == gr.J);
 }
 
 Grid3d& Grid3d::operator=(const Grid3d& gr) {
-    initialize(gr.n, gr.a, gr.b);
+    initialize(gr.gridParams);
     E = gr.E;
     B = gr.B;
     J = gr.J;
@@ -68,21 +69,22 @@ Grid3d& Grid3d::operator=(const Grid3d& gr) {
 }
 
 vec3<int> Grid3d::sizeReal() const {
-    return n;
+    return gridParams.n;
 }
 
 vec3<int> Grid3d::sizeComplex() const {
-    return { n.x, n.y, n.z / 2 + 1 };
+    return { gridParams.n.x, gridParams.n.y,
+        gridParams.n.z / 2 + 1 };
 }
 
 vec3<double> Grid3d::getStep() const {
-    return d;
+    return gridParams.d;
 }
 
 vec3<double> Grid3d::getStart() const {
-    return a;
+    return gridParams.a;
 }
 
 vec3<double> Grid3d::getEnd() const {
-    return b;
+    return gridParams.b();
 }

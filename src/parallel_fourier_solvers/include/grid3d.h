@@ -3,11 +3,16 @@
 #include "my_complex.h"
 #include "array3d.h"
 #include "simple_types.h"
+#include "grid_params.h"
 
 template <class T>
 struct FieldForGrid : public vec3<Array3d<T>> {
 
     vec3<T> operator() (int i, int j, int k) {
+        return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
+    }
+    vec3<T> operator() (vec3<int> ind) {
+        int i = ind.x; int j = ind.y; int k = ind.z;
         return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
     }
     void write(int i, int j, int k, vec3<T> val) {
@@ -36,12 +41,7 @@ struct FieldForGrid : public vec3<Array3d<T>> {
 class Grid3d
 {
 private:
-    vec3<int> n;
-
-    vec3<double> a;  // start of working area
-    vec3<double> b;  // end of working area
-
-    vec3<double> d;  // step of grid
+    GridParams gridParams;
 
     void clearGrid();
 
@@ -58,14 +58,18 @@ public:
 public:
     Grid3d();
     Grid3d(const Grid3d& gr);
-    Grid3d(vec3<int> n, vec3<double> a, vec3<double> b);
+    Grid3d(const GridParams& params);
     ~Grid3d();
+
     //сравнение только по вещественным полям
     int operator==(const Grid3d& grid2);
+    int operator!=(const Grid3d& grid2) {
+        return !(*this == grid2);
+    }
 
     Grid3d& operator=(const Grid3d& grid2);
 
-    void initialize(vec3<int> n, vec3<double> a, vec3<double> b);
+    void initialize(const GridParams& params);
 
     vec3<int> sizeReal() const;
     vec3<int> sizeComplex() const;
@@ -74,14 +78,18 @@ public:
     vec3<double> getStart() const;
     vec3<double> getEnd() const;
 
-    vec3<> getCoord(vec3<double> node) {
-        return a + (vec3<>)node * d;
+    vec3<> getCoord(vec3<> node) {
+        return gridParams.getCoord(node);
     }
-    vec3<int> getNode(vec3<double> coord) {
-        int x = (int)((coord.x - a.x) / d.x + 0.5);
-        int y = (int)((coord.y - a.y) / d.y + 0.5);
-        int z = (int)((coord.z - a.z) / d.z + 0.5);
-        return vec3<int>(x, y, z);
+    vec3<int> getNode(vec3<> coord) {
+        return gridParams.getNode(coord);
+    }
+    vec3<int> getNode(vec3<> coord, Field field, Coordinate fieldCoord) {
+        return gridParams.getNode(coord, field, fieldCoord);
+    }
+
+    GridParams getGridParams() {
+        return gridParams;
     }
 
     Direction getLastFourierTransformDirect() {
@@ -108,8 +116,8 @@ public:
         return state;
     }
 
-    void setState(Type _state) {
-        state = _state;
+    void setState(Type state) {
+        this->state = state;
     }
 
 };
