@@ -36,6 +36,12 @@ struct vec3
     explicit vec3(T a) : x(a), y(a), z(a) {
     };
 
+    static vec3<int> getBaseVector(int index) {
+        vec3<int> res(0);
+        res[index] = 1;
+        return res;
+    }
+
     vec3& operator=(const vec3& v) {
         x = v.x;
         y = v.y;
@@ -60,10 +66,6 @@ struct vec3
         default: return x;
         }
     };
-
-    T get_x() const { return x; }
-    T get_y() const { return y; }
-    T get_z() const { return z; }
 
     vec3(const vec3<T>& c) : x(c.x), y(c.y), z(c.z) {
     };
@@ -114,12 +116,20 @@ struct vec3
 
     friend bool operator==(const vec3& a, const vec3& b)
     {
-        return ((a.get_x() == b.get_x()) && (a.get_y() == b.get_y()) && (a.get_z() == b.get_z()));
+        return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z));
     };
 
     friend bool operator!=(const vec3& a, const vec3& b) {
         return !(a == b);
     };
+
+    friend bool operator<(const vec3& a, const vec3& b) {
+        return ((a.x < b.x) && (a.y < b.y) && (a.z < b.z));
+    }
+
+    friend bool operator<=(const vec3& a, const vec3& b) {
+        return ((a.x <= b.x) && (a.y <= b.y) && (a.z <= b.z));
+    }
 
     double getNorm() const
     {
@@ -148,8 +158,9 @@ struct vec3
     }
 
     friend std::string to_string(const vec3<T>& vec) {
-        std::string str = "(" + std::to_string(vec.x) + "," + std::to_string(vec.y) + "," +
-            std::to_string(vec.z) + ")";
+        std::string str = "(" + std::to_string((long long)vec.x) + "," +
+            std::to_string((long long)vec.y) + "," +
+            std::to_string((long long)vec.z) + ")";
         return str;
     }
 
