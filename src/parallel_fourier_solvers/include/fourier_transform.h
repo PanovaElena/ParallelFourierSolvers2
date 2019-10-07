@@ -4,13 +4,7 @@
 #include "physical_constants.h"
 #include "grid3d.h"
 #include "simple_types.h"
-#include "fftw.h"
-
-enum Direction {
-    None,
-    RtoC,
-    CtoR
-};
+#include "fftw3.h"
 
 class FourierTransformOfGrid {
 protected:

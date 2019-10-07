@@ -43,7 +43,7 @@ void FourierTransformOfGrid::makeFFT(Array3d<double>& arr1, Array3d<MyComplex>& 
     case RtoC:
         fftw_execute(plan);
         break;
-    case CtoR:
+    default:
         fftw_execute(plan);
         for (int i = 0; i < arr1.size1d(); i++)
             arr1[i] /= N.x * N.y * N.z;
