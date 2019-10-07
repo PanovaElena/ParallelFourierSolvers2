@@ -33,6 +33,14 @@ public:
         return shiftT[field];
     }
 
+    vec3<vec3<vec3<>>> getSpatialShift() const {
+        return shiftSp;
+    }
+
+    vec3<> getTimeShift() const {
+        return shiftT;
+    }
+
     vec3<> shiftT;
     vec3<vec3<vec3<>>> shiftSp;
 };
@@ -91,7 +99,7 @@ public:
         fourierTransform.reset(new FourierMpiTransformOfGrid(*grid, globalSize));
     }
 
-    vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
+    /*static*/ vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
         MyComplex v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
             (gr.getEnd().x - gr.getStart().x);
         MyComplex v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /

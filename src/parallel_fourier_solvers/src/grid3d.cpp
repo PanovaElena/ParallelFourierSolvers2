@@ -3,7 +3,7 @@
 Grid3d::Grid3d() :E(), B(), J(), EF(), BF(), JF() {}
 
 Grid3d::Grid3d(const Grid3d& gr) {
-    initialize(gridParams);
+    initialize(gr.gridParams);
 }
 
 Grid3d::Grid3d(const GridParams& gridParams) {
@@ -58,13 +58,8 @@ int Grid3d::operator==(const Grid3d& gr) {
 }
 
 Grid3d& Grid3d::operator=(const Grid3d& gr) {
-    initialize(gr.gridParams);
-    E = gr.E;
-    B = gr.B;
-    J = gr.J;
-    EF = gr.EF;
-    BF = gr.BF;
-    JF = gr.JF;
+    if (this != &gr)
+        initialize(gr.gridParams);
     return *this;
 }
 

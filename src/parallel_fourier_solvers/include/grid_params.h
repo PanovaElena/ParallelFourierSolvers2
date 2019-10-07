@@ -1,7 +1,8 @@
 #pragma once
+#include <functional>
 #include "vector3d.h"
 
-typedef vec3<double>(*FieldFunc)(vec3<int>, double);
+typedef std::function<vec3<double>(vec3<int>, double)> FieldFunc;
 
 struct GridParams {
     vec3<double> a;
@@ -17,40 +18,54 @@ struct GridParams {
 
     GridParams() {}
 
+    GridParams(vec3<double> a, vec3<double> d, vec3<int> n)
+    {
+        initialize(a, d, n);
+    }
+
+    /*GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
+        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
+    {
+        initialize(a, d, n, fE, fB, fJ);
+    }
+
     GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ, const vec3<double>& shiftT,
-        const vec3<vec3<vec3<double>>>& shiftSp)
+        FieldFunc fE, FieldFunc fB, FieldFunc fJ,
+        const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
     {
         initialize(a, d, n, fE, fB, fJ, shiftT, shiftSp);
-    }
+    }*/
 
-    GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
-    {
-        initialize(a, d, n, fE, fB, fJ);
-    }
-
-    void initialize(vec3<> a, vec3<> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ, const vec3<double>& shiftT,
-        const vec3<vec3<vec3<double>>>& shiftSp)
-    {
-        initialize(a, d, n, fE, fB, fJ);
-        setShifts(shiftT, shiftSp);
-    }
-
-    void initialize(vec3<> a, vec3<> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
+    void initialize(vec3<> a, vec3<> d, vec3<int> n)
     {
         this->a = a;
         this->d = d;
         this->n = n;
+    }
+
+    /*void initialize(vec3<> a, vec3<> d, vec3<int> n,
+        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
+    {
+        initialize(a, d, n);
+        setFieldFuncs(fE, fB, fJ);
+    }
+
+    void initialize(vec3<> a, vec3<> d, vec3<int> n,
+        FieldFunc fE, FieldFunc fB, FieldFunc fJ,
+        const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
+    {
+        initialize(a, d, n, fE, fB, fJ);
+        setShifts(shiftT, shiftSp);
+    }*/
+
+    void setFieldFuncs(FieldFunc fE, FieldFunc fB, FieldFunc fJ) {
         this->fE = fE;
         this->fB = fB;
         this->fJ = fJ;
     }
 
-    void setShifts(const vec3<double>& shiftT,
-        const vec3<vec3<vec3<double>>>& shiftSp) {
+    void setShifts(const vec3<vec3<vec3<double>>>& shiftSp,
+        const vec3<double>& shiftT) {
         this->shiftT = shiftT;
         this->shiftSp = shiftSp;
     }

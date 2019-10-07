@@ -36,10 +36,10 @@ class FourierMpiTransformOfGrid : public FourierTransformOfGrid {
 public:
     FourierMpiTransformOfGrid() {}
     FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int> globalSize) {
-        this->globalSize = globalSize;
         initialize(grid, globalSize);
     }
     void initialize(Grid3d& grid, const vec3<int> globalSize) {
+        this->globalSize = globalSize;
         createPlans(grid);
     }
 

@@ -56,17 +56,10 @@ function( create_executable TARGET)
         ${MPI_CXX_INCLUDE_DIRS})
     
     get_property( MY_LIBS GLOBAL PROPERTY MY_LIBRARIES )
-    if ( UNIX )
-        target_link_libraries( ${TARGET} #-static
-            ${MY_LIBS}
-            ${FFT_LIBRARIES}
-            ${MPI_CXX_LIBRARIES})
-    elseif( WIN32 )
-        target_link_libraries( ${TARGET}
-            ${MY_LIBS}
-            ${FFT_LIBRARIES}
-            ${MPI_CXX_LIBRARIES})
-    endif()
+    target_link_libraries( ${TARGET}
+        ${MY_LIBS}
+        ${FFT_LIBRARIES}
+        ${MPI_CXX_LIBRARIES})
     
     add_element_to_global_property( MY_TEST_INCLUDES "${TARGET_INCLUDE_DIRS}" )
 
@@ -94,17 +87,10 @@ function( create_tests )
         ${MPI_CXX_INCLUDE_DIRS})
     
     get_property( MY_LIBS GLOBAL PROPERTY MY_LIBRARIES )
-    if ( UNIX )
-        target_link_libraries( ${TARGET} #-static
-            ${MY_LIBS}
-            ${FFT_LIBRARIES}
-            ${MPI_CXX_LIBRARIES})
-    elseif( WIN32 )
-        target_link_libraries( ${TARGET}
-            ${MY_LIBS}
-            ${FFT_LIBRARIES}
-            ${MPI_CXX_LIBRARIES})
-    endif()
+    target_link_libraries( ${TARGET}
+        ${MY_LIBS}
+        ${FFT_LIBRARIES}
+        ${MPI_CXX_LIBRARIES})
 
 endfunction()
 
