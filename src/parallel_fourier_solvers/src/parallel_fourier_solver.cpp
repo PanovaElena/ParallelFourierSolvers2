@@ -2,26 +2,35 @@
 
 Stat ParallelFourierSolver::initialize(Grid3d & globalGrid, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme)
+    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+    const FileWriter& fileWriter)
 {
-    return init(globalGrid.getGridParams(), guardSize, mask, filter, mpiSize, scheme);
+    return init(globalGrid.getGridParams(), guardSize, mask, filter,
+        mpiSize, scheme, fieldSolver, fileWriter);
 }
 
 Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme)
+    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+    const FileWriter& fileWriter)
 {
-    return init(globalGP, guardSize, mask, filter, mpiSize, scheme);
+    return init(globalGP, guardSize, mask, filter,
+        mpiSize, scheme, fieldSolver, fileWriter);
 }
 
 Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSize,
-    const Mask& mask, const Filter& filter, vec3<int> size, const ParallelScheme& scheme)
+    const Mask& mask, const Filter& filter, vec3<int> size,
+    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+    const FileWriter& fileWriter)
 {
     this->scheme.reset(scheme.clone());
     this->mask.reset(mask.clone());
     this->filter.reset(filter.clone());
     this->mpiWrapper.reset(new MPIWrapperGrid());
+    this->fieldSolver.reset(&fieldSolver);
+    this->fileWriter.reset(&fileWriter);
 
+    this->fieldSolver->initialize(localGrid);
     if (this->mpiWrapper->initialize(size) == Stat::ERROR)
         return Stat::ERROR;
     if (this->processInfo.initialize(*mpiWrapper) == Stat::ERROR)
@@ -57,6 +66,24 @@ void ParallelFourierSolver::applyMask()
 void ParallelFourierSolver::applyFilter()
 {
     filter->apply(localGrid);
+}
+
+void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double dt)
+{
+    if (numIter == 0 || maxIterBetweenExchange == 0) return;
+    int numExchanges = numIter / maxIterBetweenExchange;
+    int numIterBeforeLastExchange = numIter % maxIterBetweenExchange;
+
+    for (int i = 0; i < numExchanges - 1; i++)
+        doOneExchange(maxIterBetweenExchange, dt, false);
+
+    if (numIterBeforeLastExchange != 0) {
+        doOneExchange(maxIterBetweenExchange, dt, false);
+        doOneExchange(numIterBeforeLastExchange, dt, true);
+    }
+    else {
+        doOneExchange(maxIterBetweenExchange, dt, true);
+    }
 }
 
 Stat ParallelFourierSolver::validate()
@@ -123,10 +150,32 @@ void ParallelFourierSolver::setFilter()
 {
 }
 
+void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
+{
+    mask->apply(localGrid);
+
+    fieldSolver->doFourierTransform(RtoC);
+
+    for (int i = 0; i < numIter; i++)
+        fieldSolver->operator()(dt);
+
+    fieldSolver->doFourierTransform(CtoR);
+
+    if (ifWrite)
+        fileWriter->write(localGrid, "iter_rank_" + std::to_string(MPIWrapper::MPIRank()) +
+            "_before_last_exc.csv", Double);
+
+    mpiWorker.exchangeGuard();
+
+    if (ifWrite)
+        fileWriter->write(localGrid, "iter_rank_" + std::to_string(MPIWrapper::MPIRank()) +
+            "_after_last_exc.csv", Double);
+}
+
 GridParams ParallelFourierSolver::getLocalGridParams(const GridParams & globalGP)
 {
     GridParams gp = globalGP;
     gp.a = (vec3<>)(domainStart - guardSize)*globalGP.d + globalGP.a;
-    gp.n = getFullDomainSize();
+    gp.n = getFullSize();
     return gp;
 }

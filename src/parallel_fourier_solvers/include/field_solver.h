@@ -14,8 +14,13 @@ protected:
 public:
     FieldSolver() {}
     FieldSolver(Grid3d& grid) {
+        initialize(grid);
+    }
+
+    virtual void initialize(Grid3d& grid) {
         this->grid.reset(&grid);
     }
+
     virtual void operator() (double dt) = 0;
 
     virtual void doFourierTransform(Direction dir) {}
@@ -35,20 +40,32 @@ public:
 class RealFieldSolver : public FieldSolver {
 public:
     RealFieldSolver() {}
-    RealFieldSolver(Grid3d& grid) : FieldSolver(grid) {}
+    RealFieldSolver(Grid3d& grid) {
+        initialize(grid);
+    }
+
+    void initialize(Grid3d& grid) override {
+        FieldSolver::initialize(grid);
+    }
 };
 
 class FieldSolverFDTD: public RealFieldSolver {
 public:
     FieldSolverFDTD() {}
-    FieldSolverFDTD(Grid3d& grid) :
-        RealFieldSolver(grid) {
+
+    FieldSolverFDTD(Grid3d& grid){
+        initialize(grid);
+    }
+
+    void initialize(Grid3d& grid) override {
+        RealFieldSolver::initialize(grid);
         shiftT[B] = -0.5;
         shiftT[E] = 0.5;
         shiftSp[E] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
         shiftSp[B] = vec3<vec3<>>(vec3<>(0, 0.5, 0.5), vec3<>(0.5, 0, 0.5), vec3<>(0.5, 0.5, 0));
         shiftSp[J] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
     }
+
     void operator() (double dt) override;
 protected:
     void refreshE(double dt);
@@ -57,18 +74,21 @@ protected:
 
 class FourierFieldSolver : public FieldSolver {
     std::shared_ptr<FourierTransformOfGrid> fourierTransform;
+    bool ifMpiF = false;
 
 public:
     FourierFieldSolver() {}
-    FourierFieldSolver(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) {
-        initialize(grid, ifMpi, globalSize);
+    FourierFieldSolver(Grid3d& grid) {
+        initialize(grid);
     }
-    void initialize(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) {
-        this->grid.reset(grid);
-        if (ifMpi)
-            fourierTransform.reset(new FourierMpiTransformOfGrid(*grid, *globalSize));
-        else
-            fourierTransform.reset(new FourierTransformOfGrid(*grid));
+
+    void initialize(Grid3d& grid) override {
+        FourierFieldSolver::initialize(grid);
+        fourierTransform.reset(new FourierTransformOfGrid(grid));
+    }
+
+    void setGlobalFourierTransform(vec3<int> globalSize) {
+        fourierTransform.reset(new FourierMpiTransformOfGrid(*grid, globalSize));
     }
 
     vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
@@ -89,21 +109,31 @@ public:
 class FieldSolverPSATD : public FourierFieldSolver {
 public:
     FieldSolverPSATD() {}
-    FieldSolverPSATD(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) :
-        FourierFieldSolver(grid, ifMpi, globalSize) {
+    FieldSolverPSATD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+        initialize(grid);
+    }
+
+    void initialize(Grid3d& grid) override {
+        FourierFieldSolver::initialize(grid);
         shiftT[J] = 0.5;
     }
+
     void operator() (double dt) override;
 };
 
 class FieldSolverPSTD : public FourierFieldSolver {
 public:
     FieldSolverPSTD() {}
-    FieldSolverPSTD(Grid3d * grid, bool ifMpi = false, const vec3<int>* globalSize = 0) :
-        FourierFieldSolver(grid, ifMpi, globalSize) {
+    FieldSolverPSTD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+        initialize(grid);
+    }
+
+    void initialize(Grid3d& grid) override {
+        FourierFieldSolver::initialize(grid);
         shiftT[B] = 0.5;
         shiftT[J] = 0.5;
     }
+
     void operator() (double dt) override;
 protected:
     void refreshE(double dt);
