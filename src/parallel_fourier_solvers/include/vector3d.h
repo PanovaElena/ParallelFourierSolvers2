@@ -22,7 +22,7 @@ public:
     T y;
     T z;
 
-    vec3() {};
+    vec3() {}
 
     vec3(T a, T b, T c) : x(a), y(b), z(c) {
     };
@@ -173,3 +173,17 @@ public:
             coord == Coordinate::z ? valCoord.z : valOther.z);
     }
 };
+
+template<>
+vec3<double>::vec3() {
+    x = 0.0;
+    y = 0.0;
+    z = 0.0;
+}
+
+template<>
+vec3<int>::vec3() {
+    x = 0;
+    y = 0;
+    z = 0;
+}

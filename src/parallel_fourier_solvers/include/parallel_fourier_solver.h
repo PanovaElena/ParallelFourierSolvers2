@@ -6,7 +6,6 @@
 #include "mask.h"
 #include "filter.h"
 #include "vector3d.h"
-#include "process_info.h"
 #include "status.h"
 #include "mpi_worker.h"
 #include "parallel_scheme.h"
@@ -26,9 +25,8 @@ class ParallelFourierSolver {
     vec3<int> leftGuardStart;
     vec3<int> rightGuardStart;
 
-    ProcessInfo processInfo;
     MPIWorker mpiWorker;
-    std::shared_ptr<FileWriter> fileWriter;
+    FileWriter fileWriter;
     std::shared_ptr<MPIWrapperGrid> mpiWrapper;
     std::shared_ptr<ParallelScheme> scheme;
     std::shared_ptr<FieldSolver> fieldSolver;
@@ -36,16 +34,16 @@ class ParallelFourierSolver {
 public:
 
     // common localGrid on zero process
-    Stat initialize(Grid3d& globalGrid, vec3<int> guardSize,
+    Stat initialize(const Grid3d& globalGrid, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-        const ParallelScheme& scheme, FieldSolver& fieldSolver,
-        FileWriter& fileWriter);
+        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+        const FileWriter& fileWriter);
 
     // without common localGrid
     Stat initialize(const GridParams& globalGP, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-        const ParallelScheme& scheme, FieldSolver& fieldSolver,
-        FileWriter& fileWriter);
+        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+        const FileWriter& fileWriter);
 
     vec3<int> getFullSize() {
         return domainSize + 2 * guardSize;
@@ -55,12 +53,36 @@ public:
     void applyFilter();
 
     void run(int numIter, int maxIterBetweenExchange, double dt);
+    void assembleResults(Grid3d& commonGrid) {
+        mpiWorker.assembleResultsToRoot(commonGrid);
+    }
+
+    vec3<int> getDomainSize() {
+        return domainSize;
+    }
+    vec3<int> getGuardSize() {
+        return guardSize;
+    }
+    vec3<int> getDomainStart() {
+        return domainStart;
+    }
+    vec3<int> getDomainEnd() {
+        return domainStart + domainSize;
+    }
+
+    Grid3d& getGrid() {
+        return localGrid;
+    }
+
+    void writeFile(std::string fileName) {
+        fileWriter.write(localGrid, fileName);
+    }
 
 private:
     Stat init(const GridParams& globalGP, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> size,
-        const ParallelScheme& scheme, FieldSolver& fieldSolver,
-        FileWriter& fileWriter);
+        const ParallelScheme& scheme, const FieldSolver& fieldSolver,
+        const FileWriter& fileWriter);
 
     Stat validate();  // only after processInfo init
 
@@ -78,5 +100,4 @@ private:
     void setFilter();
 
     void doOneExchange(int numIter, double dt, bool ifWrite);
-
 };

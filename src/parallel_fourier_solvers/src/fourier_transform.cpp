@@ -17,10 +17,10 @@ void FourierTransformOfGrid::createPlans(Grid3d & grid)
             Array3d<MyComplex>& arrC = (grid.*getMemberPtrField<MyComplex>((Field)field))
                 .*getMemberPtrFieldCoord<MyComplex>((Coordinate)coord);
 
-            // fftw_plan_with_nthreads(omp_get_max_threads());
+            fftw_plan_with_nthreads(omp_get_max_threads());
             plans[RtoC][field][coord] = fftw_plan_dft_r2c_3d(Nx, Ny, Nz, &(arrD[0]), (fftw_complex*)&(arrC[0]),
                 FFTW_MEASURE);
-            // fftw_plan_with_nthreads(omp_get_max_threads());
+            fftw_plan_with_nthreads(omp_get_max_threads());
             plans[CtoR][field][coord] = fftw_plan_dft_c2r_3d(Nx, Ny, Nz, (fftw_complex*)&(arrC[0]), &(arrD[0]),
                 FFTW_MEASURE);
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "vector3d.h"
 #include "status.h"
 #include "simple_types.h"
@@ -46,13 +47,14 @@ public:
         return operation;
     }
 
+    virtual std::string to_string() = 0;
+
 };
 
 
 class ParallelSchemeSum: public ParallelScheme {
-    Array3d<double> tmp;
-
 public:
+    ParallelSchemeSum() {}
     ParallelSchemeSum(vec3<int> domainSize, vec3<int> guardSize) {
         initialize(domainSize, guardSize);
     }
@@ -68,11 +70,16 @@ public:
     virtual ParallelScheme* clone() const override {
         return new ParallelSchemeSum(*this);
     }
+
+    std::string to_string() override {
+        return "sum";
+    }
 };
 
 
 class ParallelSchemeCopy: public ParallelScheme {
 public:
+    ParallelSchemeCopy() {}
     ParallelSchemeCopy(vec3<int> domainSize, vec3<int> guardSize) {
         initialize(domainSize, guardSize);
     }
@@ -82,10 +89,14 @@ public:
     void setBoardsForExchange() override;
 
     void setMask(const std::shared_ptr<Mask>& mask) override {
-        mask->setDomainAndGuardSize(domainSize + guardSize - guardSize / 2, guardSize / 2);
+        mask->setDomainAndGuardSize(domainSize + guardSize, guardSize / 2);
     }
 
     virtual ParallelScheme* clone() const override {
         return new ParallelSchemeCopy(*this);
+    }
+
+    std::string to_string() override {
+        return "copy";
     }
 };

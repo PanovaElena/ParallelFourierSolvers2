@@ -1,13 +1,15 @@
 #pragma once
 #include "mpi.h"
-#include <iostream>
 #include <string>
 #include <map>
 #include "array3d.h"
 #include "status.h"
 
+
 class MPIWrapper {
 public:
+    static const int MPIROOT = 0;
+
     static int MPISize(MPI_Comm comm = MPI_COMM_WORLD) {
         int size;
         MPI_Comm_size(comm, &size);
@@ -28,7 +30,8 @@ public:
     }
     static void MPIWait(MPI_Request& request) {
         MPI_Status status;
-        MPI_Wait(&request, &status);
+        if (MPI_Wait(&request, &status) != 0)
+            std::cout << "ERROR REQUEST" << std::endl;
     }
     static void MPIInitialize(int& argc, char**& argv) {
         MPI_Init(&argc, &argv);
@@ -38,10 +41,6 @@ public:
     }
     static void MPIBarrier(MPI_Comm comm = MPI_COMM_WORLD) {
         MPI_Barrier(comm);
-    }
-
-    static void showMessage(std::string message) {
-        std::cout << "rank " << MPIRank() << ": " << message << std::endl;
     }
 
     typedef MPI_Request MPIRequest;

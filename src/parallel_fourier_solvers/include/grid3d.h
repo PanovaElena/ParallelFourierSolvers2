@@ -89,8 +89,12 @@ public:
         return gridParams.getNode(coord, field, fieldCoord);
     }
 
-    GridParams getGridParams() {
+    GridParams getGridParams() const {
         return gridParams;
+    }
+
+    void setShifts(const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT) {
+        gridParams.setShifts(shiftSp, shiftT);
     }
 
     Direction getLastFourierTransformDirect() {

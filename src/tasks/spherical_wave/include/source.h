@@ -24,7 +24,7 @@ public:
     }
     double getEndTime() { return startTime + time; }
 
-    double getJ(vec3<double> coordinate, double time) {
+    double getJ(vec3<double> coordinate, double t) {
         if (t > time + startTime || t < startTime) return 0;
         if (coordinate.x > coord.x + 0.5*width.x ||
             coordinate.x < coord.x - 0.5*width.x ||

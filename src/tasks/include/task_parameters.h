@@ -9,16 +9,17 @@
 #include "vector3d.h"
 #include "file_writer.h"
 #include "physical_constants.h"
-#include "start_conditions.h"
+#include "grid_params.h"
+#include "parallel_scheme.h"
 
-struct TaskParameters {
+
+class TaskParameters {
+public:
     // type of field solver
-    FieldSolver fieldSolver;
+    std::unique_ptr<FieldSolver> fieldSolver;
 
     // grid
-    vec3<int> n;
-    vec3<double> d;  // step of grid
-    vec3<double> a, b;  // begin and end of grid
+    GridParams gridParams;
 
     // time step
     double dt;
@@ -26,43 +27,68 @@ struct TaskParameters {
     // number of time steps
     int nSeqSteps;
 
-    // start conditions: E(0), B(0) and J(t)
-    std::unique_ptr<StartConditions> startCond;
-
-    TaskParameters(): fieldSolver(PSATD), n(32), a(0),
-        d(constants::c), dt(0.1), nSeqSteps(0) {
-        b = a + d * (vec3<>)n;
-        startCond.reset(new StartConditions(a, d, dt, fieldSolver));
+    TaskParameters() {
+        setDefaultValues();
     }
 
     TaskParameters(const TaskParameters& t) {
-        fieldSolver = t.fieldSolver;
-        n = t.n; a = t.a; d = t.d; dt = t.dt;
+        fieldSolver.reset(t.fieldSolver->clone());
+        gridParams = t.gridParams;
         nSeqSteps = t.nSeqSteps;
-        b = a + d * (vec3<>)n;
-        startCond.reset(new StartConditions(a, d, dt, fieldSolver));
     }
 
     TaskParameters& operator=(const TaskParameters& t) {
-        fieldSolver = t.fieldSolver;
-        n = t.n; a = t.a; d = t.d; dt = t.dt;
+        fieldSolver.reset(t.fieldSolver->clone());
+        gridParams = t.gridParams;
         nSeqSteps = t.nSeqSteps;
-        b = a + d * (vec3<>)n;
-        startCond.reset(new StartConditions(a, d, dt, fieldSolver));
         return *this;
+    }
+
+    void setDefaultValues() {
+        fieldSolver.reset(new FieldSolverPSATD());
+        vec3<> a(0), d(constants::c);
+        vec3<int> n(32);
+        auto lambda = [](vec3<int>, double) {return vec3<>(0); };
+        gridParams.initialize(a, d, n, lambda, lambda, lambda,
+            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+        dt = 0.1;
+        nSeqSteps = 0;
+    }
+
+    void setFieldSolver(const FieldSolver& fs, Grid3d& grid) {
+        fieldSolver.reset(fs.clone());
+        grid.setShifts(fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+        fieldSolver->initialize(grid);
+    }
+
+    void print(std::ostream& ost = std::cout) const {
+        ost <<
+            "field solver = " << fieldSolver->to_string() << "\n" <<
+            "dt = " << dt << "\n" <<
+            "a = " << gridParams.a << "\n" <<
+            "b = " << gridParams.b() << "\n" <<
+            "n = " << gridParams.n << "\n" <<
+            "d = " << gridParams.d << "\n" <<
+            "number of sequential steps = " << nSeqSteps << "\n";
     }
 
 };
 
-struct ParallelTaskParameters : public TaskParameters {
+class ParallelTaskParameters : public TaskParameters {
+
+public:
+    // mask
+    std::unique_ptr<Mask> mask;
+
+    // low frequency filter
+    std::unique_ptr<Filter> filter;
+
+    // sum or copy
+    std::unique_ptr<ParallelScheme> scheme;
 
     vec3<int> guard;
 
-    // mask
-    Mask mask;
-
-    // low frequency filter
-    Filter filter;
+    vec3<int> numOfProcesses;
 
     // number of steps
     int nParSteps;  // parallel
@@ -71,14 +97,51 @@ struct ParallelTaskParameters : public TaskParameters {
     // output
     FileWriter fileWriter;
 
-    ParallelTaskParameters() : guard(4), mask(SimpleMask),
-        filter(vec3<int>(4), vec3<int>(2)),
-        nParSteps(0), nDomainSteps(1) {
-        mask.setMaskWidth(vec3<int>(4));
+    ParallelTaskParameters() {
+        setDefaultValues();
+    }
+
+    ParallelTaskParameters(const ParallelTaskParameters& t) :
+        TaskParameters(t) {
+        mask.reset(t.mask->clone());
+        filter.reset(t.filter->clone());
+        scheme.reset(t.scheme->clone());
+        numOfProcesses = t.numOfProcesses;
+        guard = t.guard;
+        nParSteps = t.nParSteps;
+        nDomainSteps = t.nDomainSteps;
+        fileWriter = t.fileWriter;
+    }
+
+    ParallelTaskParameters& operator=(const ParallelTaskParameters& t) {
+        fieldSolver.reset(t.fieldSolver->clone());
+        gridParams = t.gridParams;
+        nSeqSteps = t.nSeqSteps;
+        mask.reset(t.mask->clone());
+        filter.reset(t.filter->clone());
+        scheme.reset(t.scheme->clone());
+        numOfProcesses = t.numOfProcesses;
+        guard = t.guard;
+        nParSteps = t.nParSteps;
+        nDomainSteps = t.nDomainSteps;
+        fileWriter = t.fileWriter;
+        return *this;
     }
 
     int getNSteps() const {
         return nSeqSteps + nParSteps;
+    }
+
+    void setDefaultValues() {
+        TaskParameters::setDefaultValues();
+        guard = vec3<int>(8);
+        mask.reset(new SimpleMask(vec3<int>(4)));
+        filter.reset(new LowFreqFilter(vec3<int>(4), vec3<int>(2)));
+        filter->turnOff();
+        scheme.reset(new ParallelSchemeCopy());
+        nParSteps = 0;
+        nDomainSteps = 1;
+        numOfProcesses = vec3<int>(2, 1, 1);
     }
 
     void print(std::ostream& ost = std::cout) const {
@@ -86,24 +149,19 @@ struct ParallelTaskParameters : public TaskParameters {
         int numExchanges = nParSteps / nDomainSteps;
         int numIterBeforeLastExchange = nParSteps % nDomainSteps;
 
+        TaskParameters::print(ost);
         ost <<
-            "field solver = " << fieldSolver.to_string() << "\n" <<
-            "dt = " << dt << "\n" <<
-            "a = " << a << "\n" <<
-            "b = " << (a + d * (const vec3<double>)n) << "\n" <<
-            "n = " << n << "\n" <<
-            "d = " << d << "\n" <<
-            "guard = " << guard << "\n" <<
-            "mask = " << mask.to_string() << "\n" <<
-            "mask width = " << mask.getMaskWidth() << "\n" <<
-            "filter = " << filter.to_string() << "\n" <<
-            "filter width = " << filter.getWidth() << "\n" <<
-            "number of zero frequences for filter = " << filter.getNumZeroFreq() << "\n" <<
-            "number of steps = " << getNSteps() << "\n" <<
-            "number of sequential steps = " << nSeqSteps << "\n" <<
             "number of parallel steps = " << nParSteps << "\n" <<
             "number of steps between exchanges = " << nDomainSteps << "\n" <<
             "number of exchanges = " << numExchanges + 1 << "\n" <<
-            "number of iterations before last exchange = " << numIterBeforeLastExchange << "\n";
+            "number of iterations before last exchange = " << numIterBeforeLastExchange << "\n" <<
+            "scheme = " << scheme->to_string() << "\n" <<
+            "guard = " << guard << "\n" <<
+            "mask = " << mask->to_string() << "\n" <<
+            "mask width = " << mask->getMaskWidth() << "\n" <<
+            "filter = " << filter->to_string() << "\n" <<
+            "filter width = " << filter->getWidth() << "\n" <<
+            "number of zero frequences for filter = " << filter->getNumZeroFreq() << "\n" <<
+            "number of processes = " << numOfProcesses << "\n";
     }
 };

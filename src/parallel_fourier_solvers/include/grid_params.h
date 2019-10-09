@@ -2,7 +2,7 @@
 #include <functional>
 #include "vector3d.h"
 
-typedef std::function<vec3<double>(vec3<int>, double)> FieldFunc;
+typedef std::function<vec3<double>(vec3<int>, int)> FieldFunc;
 
 struct GridParams {
     vec3<double> a;
@@ -78,6 +78,11 @@ struct GridParams {
         return a + node * d;
     }
 
+    vec3<double> getCoord(vec3<int> node, Field field, Coordinate fieldCoord) const {
+        vec3<> shift = shiftSp[field][fieldCoord];
+        return a + (vec3<>(node) + shift) * d;
+    }
+
     vec3<int> getNode(vec3<double> coord) const {
         int x = (int)((coord.x - a.x) / d.x + 0.5);
         int y = (int)((coord.y - a.y) / d.y + 0.5);
@@ -91,5 +96,13 @@ struct GridParams {
         int y = (int)((coord.y - a.y - shift.y) / d.y + 0.5);
         int z = (int)((coord.z - a.z - shift.z) / d.z + 0.5);
         return vec3<int>(x, y, z);
+    }
+
+    double getTime(int iter, double dt, double startTime = 0) {
+        return iter * dt + startTime;
+    }
+
+    double getTime(int iter, double dt, double startTime, Field field) {
+        return (iter + shiftT[field])* dt + startTime;
     }
 };

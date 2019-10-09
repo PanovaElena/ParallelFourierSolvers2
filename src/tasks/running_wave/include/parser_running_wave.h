@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <iostream>
 #include "task_parser.h"
 #include "running_wave.h"
 #include "mask.h"
@@ -19,9 +20,9 @@ public:
             std::endl;
     }
 
-    Status saveArgs(TaskParameters& p, Task task) override {
-        Status s = TaskParser::saveArgs(p, task);
-        if (s == Status::ERROR || s == Status::STOP) return s;
+    Stat saveArgs(TaskParameters& p, Task task) override {
+        Stat s = TaskParser::saveArgs(p, task);
+        if (s == Stat::ERROR || s == Stat::STOP) return s;
 
         ParametersForRunningWave& params = static_cast<ParametersForRunningWave&>(p);
 
@@ -29,7 +30,7 @@ public:
         if (m.find("-angle") != m.end()) params.angle = constants::pi*std::stod(m.find("-angle")->second) / 180;
         if (m.find("-dim") != m.end()) params.dimensionOfOutputData = std::stoi(m.find("-dim")->second);
 
-        return Status::OK;
+        return Stat::OK;
     }
 
 };

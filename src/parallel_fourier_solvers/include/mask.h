@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <string>
 #include "vector3d.h"
 #include "grid3d.h"
 #include "class_member_ptr.h"
@@ -42,6 +43,8 @@ public:
     virtual double compMult(vec3<int> ind) = 0;
     void apply(Grid3d& grid);
     void apply(Grid3d& grid, Field f, Coordinate c);
+
+    virtual std::string to_string() = 0;
 };
 
 class SimpleMask : public Mask {
@@ -56,6 +59,10 @@ public:
     Mask* clone() const override {
         return new SimpleMask(*this);
     }
+
+    std::string to_string() override {
+        return "SimpleMask";
+    }
 };
 
 class SmoothMask : public Mask {
@@ -69,6 +76,10 @@ public:
 
     Mask* clone() const override {
         return new SmoothMask(*this);
+    }
+
+    std::string to_string() override {
+        return "SmoothMask";
     }
 
 private:

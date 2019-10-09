@@ -25,6 +25,10 @@ public:
     void fourierTransform(Grid3d& grid, Direction dir);
     void fourierTransform(Grid3d& grid, Field _field, Coordinate _coord, Direction dir);
 
+    virtual FourierTransformOfGrid* clone() const {
+        return new FourierTransformOfGrid(*this);
+    }
+
 protected:
     virtual void createPlans(Grid3d& grid);
     void destroyPlans();
@@ -43,6 +47,10 @@ public:
         this->globalSize = globalSize;
         createPlans(grid);
         grid.setFields();
+    }
+
+    FourierTransformOfGrid* clone() const override {
+        return new FourierMpiTransformOfGrid(*this);
     }
 
 protected:
