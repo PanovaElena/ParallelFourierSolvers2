@@ -85,6 +85,3 @@ public:
 private:
     double f(int i, int domainSize, int guardSize, int maskWidth);  // for one dim
 };
-
-//const std::map<std::string, Mask> MaskMap =
-//{ { "simple", SimpleMask },{ "smooth", SmoothMask } };

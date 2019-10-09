@@ -12,18 +12,16 @@ int main(int argc, char** argv) {
     fftw_init_threads();
     ParametersForRunningWave params;
     ParserRunningWave parser;
-    MPIWorker* mpiWorker = 0;
-    Status status = parser.parseArgsForParallel(argc, argv, params);
-    Status status1 = parser.createMPIWorker(mpiWorker);
-    Status status2 = Status::OK;
-    if (status == Status::OK && status1 == Status::OK) {
-        if (MPIWrapper::MPIRank() == 0) params.print();
-        TestRunningWaveJustParallel test(*mpiWorker);
+    Stat status = parser.parseArgsForParallel(argc, argv, params);
+    if (status == Stat::OK) {
+        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) params.print();
+        TestRunningWaveJustParallel test;
         test.setParamsForTest(params);
-        test.testBody();
+        Stat status2 = test.testBody();
+        if (status == Stat::ERROR)
+            std::cout << "ERROR: fail run test" << std::endl;
     }
-    else if (status == Status::ERROR || status1 == Status::ERROR || status2 == Status::ERROR)
+    else if (status == Stat::ERROR)
         std::cout << "There are some problems in args" << std::endl;
-    delete mpiWorker;
     MPIWrapper::MPIFinalize();
 }

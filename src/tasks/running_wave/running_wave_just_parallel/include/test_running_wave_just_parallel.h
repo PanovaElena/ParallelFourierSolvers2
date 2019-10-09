@@ -1,84 +1,59 @@
 #pragma once
 #include <omp.h>
 #include <string>
-#include "mpi_worker.h"
-#include "mpi_wrapper_3d.h"
+#include "parallel_fourier_solver.h"
 #include "test_parallel.h"
 #include "running_wave.h"
 #include "field_solver.h"
 #include "file_writer.h"
 
-class RunningWaveJustParallel : public RunningWave {
-public:
-    RunningWaveJustParallel() : RunningWave(true) {}
-
-    void setParamsForTest(ParametersForRunningWave p) {
-        params = p;
-        if (params.dimensionOfOutputData == 2)
-            params.fileWriter.setSection(Section(Section::XOZ, Section::center));
-        params.startCond.reset(new StartConditionsRunningWave(params.a, params.d, params.dt,
-            params.angle, params.lambda, params.fieldSolver));
-    }
-};
 
 class TestRunningWaveJustParallel : public TestParallel {
-    RunningWaveJustParallel runningWave;
-    MPIWorker& worker;
+    RunningWave task;
+    ParallelFourierSolver parallelSolver;
 
 public:
-    void setParamsForTest(const ParametersForRunningWave& p) {
-        runningWave.setParamsForTest(p);
+    void setParamsForTest(ParametersForRunningWave p) {
+        task.setParamsForTest(p);
     }
 
-    TestRunningWaveJustParallel(MPIWorker& _mpiWorker) : runningWave(), worker(_mpiWorker) {
+    TestRunningWaveJustParallel() : task() {
         setNameFiles();
     }
 
-    Status doParallelPart() {
-
-        FileWriter fw(runningWave.params.fileWriter.getDir(), runningWave.params.fileWriter.getField(),
-            runningWave.params.fileWriter.getCoord(),
-            Section(Section::XOZ, Section::center, Section::XOY, Section::start));
-
-        vec3<int> guard(worker.getMPIWrapper().MPISize().x == 1 ? 0 : runningWave.params.guard.x,
-            worker.getMPIWrapper().MPISize().y == 1 ? 0 : runningWave.params.guard.y,
-            worker.getMPIWrapper().MPISize().z == 1 ? 0 : runningWave.params.guard.z);
-        if (worker.initialize(runningWave.params.n, guard, runningWave.params.mask,
-            worker.getMPIWrapper(), *runningWave.params.startCond) == Status::ERROR)
-            return Status::ERROR;
-
-        MPIWrapper::showMessage("start par: domain from " + to_string(worker.getMainDomainStart()) + " to " +
-           to_string(worker.getMainDomainEnd()) + "; guard is " + to_string(worker.getGuardSize()));
-
-        //MPIWrapper::showMessage("writing to file first domain");
-        runningWave.params.fileWriter.write(worker.getGrid(), nameFileAfterDivision);
-
-        if (runningWave.params.filter.state == Filter::on && MPIWrapper::MPIRank() == 0) {
-            transformGridIfNecessary(runningWave.params.fieldSolver, worker.getGrid(), RtoC);
-            fw.write(worker.getGrid(), "spectrum_after_div.csv", Complex);
-            transformGridIfNecessary(runningWave.params.fieldSolver, worker.getGrid(), CtoR);
-        }
-
-        double t1 = omp_get_wtime();
-
-        //MPIWrapper::showMessage("parallel field solver");
-        parallelScheme(worker, runningWave.params.fieldSolver, runningWave.params.nParSteps,
-            runningWave.params.nDomainSteps, runningWave.params.dt, runningWave.params.fileWriter);
-
-        double t2 = omp_get_wtime();
-        if (MPIWrapper::MPIRank() == 0)
-            std::cout << "Time of parallel version is " << t2 - t1 << std::endl;
-
-        //MPIWrapper::showMessage("writing to file parallel result");
-        runningWave.params.fileWriter.write(worker.getGrid(), nameFileAfterExchange);
-
-        return Status::OK;
+    Stat initializeParallelSolver() {
+        return parallelSolver.initialize(task.params.gridParams, task.params.guard, *task.params.mask,
+            *task.params.filter, task.params.numOfProcesses, *task.params.scheme,
+            *task.params.fieldSolver, task.params.fileWriter);
     }
 
-    virtual Status testBody() {
-        if (runningWave.params.nParSteps != 0)
+    Stat doParallelPart() {
+
+        if (initializeParallelSolver() == Stat::ERROR)
+            return Stat::ERROR;
+
+        //std::cout << "writing to file first domain\n";
+        parallelSolver.writeFile(nameFileAfterDivision);
+
+        //std::cout << "parallel field solver\n";
+        double t1 = omp_get_wtime();
+
+        parallelSolver.run(task.params.nParSteps, task.params.nDomainSteps, task.params.dt);
+
+        double t2 = omp_get_wtime();
+        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
+            std::cout << "Time of parallel version is " << t2 - t1 << "\n";
+
+        //std::cout << "writing to file parallel result\n";
+        parallelSolver.writeFile(nameFileAfterExchange);
+
+        return Stat::OK;
+    }
+
+    virtual Stat testBody() {
+        if (task.params.nParSteps != 0)
             return doParallelPart();
-        return Status::OK;
+        return Stat::OK;
     }
 
 };

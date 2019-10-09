@@ -1,2 +1,7 @@
-add_subdirectory(running_wave)
-add_subdirectory(spherical_wave)
+if (USE_TASK_RW)
+    add_subdirectory(running_wave)
+endif()
+
+if (USE_TASK_SW)
+    add_subdirectory(spherical_wave)
+endif()

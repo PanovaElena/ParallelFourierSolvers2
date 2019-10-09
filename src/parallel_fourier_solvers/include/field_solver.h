@@ -205,10 +205,3 @@ protected:
     void refreshE(double dt);
     void refreshB(double dt);
 };
-
-//const std::map<std::string, FieldSolver> FieldSolverMap =
-//{ { "PSTD",PSTD },{ "PSATD",PSATD },{ "FDTD",FDTD } };
-//
-//void parallelScheme(MPIWorker& worker, const FieldSolver& fieldSolver, int numIter, int maxNumIterBetweenExchanges,
-//    double dt, FileWriter& fileWriter);
-

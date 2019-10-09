@@ -5,6 +5,8 @@ option(USE_FFTW "using fftw" OFF)
 option(USE_GLOBAL_FFT "using global mpi fft" OFF)
 option(USE_OMP "using omp" ON)
 option(USE_TESTS "using tests" ON)
+option(USE_TASK_RW "using tasks for running wave" ON)
+option(USE_TASK_SW "using tasks for spherical wave" OFF)
 option(USE_BENCH_FFT "using benchmarks for fft" OFF)
 
 # set FFTW_DIR if fftw has already installed

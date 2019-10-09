@@ -1,9 +1,8 @@
 #pragma once
 #include <omp.h>
-#include <ctime>
+#include <string>
 #include "parallel_fourier_solver.h"
 #include "test_parallel.h"
-#include "string"
 #include "running_wave.h"
 #include "field_solver.h"
 #include "file_writer.h"
@@ -55,10 +54,10 @@ public:
         if (initializeParallelSolver() == Stat::ERROR)
             return Stat::ERROR;
 
-        std::cout << "start par: domain from " << parallelSolver.getDomainStart() << " to " <<
-            parallelSolver.getDomainEnd() << "; guard is " << parallelSolver.getGuardSize() <<"\n";
+        //std::cout << "start par: domain from " << parallelSolver.getDomainStart() << " to " <<
+        //    parallelSolver.getDomainEnd() << "; guard is " << parallelSolver.getGuardSize() <<"\n";
 
-        std::cout << "writing to file first domain\n";
+        //std::cout << "writing to file first domain\n";
         parallelSolver.writeFile(nameFileAfterDivision);
 
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
@@ -67,7 +66,7 @@ public:
             task.params.fieldSolver->doFourierTransform(CtoR);
         }
 
-        std::cout << "parallel field solver\n";
+        //std::cout << "parallel field solver\n";
         double t1 = omp_get_wtime();
 
         parallelSolver.run(task.params.nParSteps, task.params.nDomainSteps, task.params.dt);
@@ -76,11 +75,10 @@ public:
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
             std::cout << "Time of parallel version is " << t2 - t1 << "\n";
 
-
-        std::cout << "writing to file parallel result\n";
+        //std::cout << "writing to file parallel result\n";
         parallelSolver.writeFile(nameFileAfterExchange);
 
-        std::cout << "assemble\n";
+        //std::cout << "assemble\n";
         parallelSolver.assembleResults(task.grid);
 
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
@@ -91,7 +89,7 @@ public:
             task.params.fieldSolver->doFourierTransform(CtoR);
         }
 
-        std::cout << "writing to file assembled result\n";
+        //std::cout << "writing to file assembled result\n";
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
             task.params.fileWriter.write(task.grid, nameFileSecondSteps);
 
@@ -103,7 +101,7 @@ public:
             doSequentialPart();
         MPIWrapper::MPIBarrier();
         if (task.params.nParSteps != 0)
-            doParallelPart();
+            return doParallelPart();
         return Stat::OK;
     }
 
