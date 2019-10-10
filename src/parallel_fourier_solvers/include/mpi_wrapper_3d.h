@@ -10,11 +10,15 @@ class MPIWrapper3d : public MPIWrapper {
 protected:
     vec3<int> size;
     MPI_Comm cartComm;
+    bool ifCartCreated = false;
 
 public:
     MPIWrapper3d() : size(1, 1, 1) {}
     MPIWrapper3d(vec3<int> np) {
         initialize(np);
+    }
+    virtual ~MPIWrapper3d() {
+        if (ifCartCreated) MPI_Comm_free(&cartComm);
     }
 
     Stat initialize(vec3<int> mpiSize);
@@ -64,8 +68,8 @@ public:
         MPIWrapper::MPIBarrier(cartComm);
     }
 
-    Stat MPIISendSubarray(Array3d<double>& arr, Boards boards,
-        vec3<int> dest, int tag, MPI_Request& request) const;
+    Stat MPISendSubarray(Array3d<double>& arr, Boards boards,
+        vec3<int> dest, int tag, bool ifBlock) const;
 
     Stat MPIRecvSubarray(Array3d<double>& arr, Boards boards,
         vec3<int> source, int tag) const;
@@ -84,19 +88,27 @@ protected:
 class MPIWrapperGrid: public MPIWrapper3d {
     vec3<Pair<MPI_Datatype>> sendTypes;
     vec3<Pair<MPI_Datatype>> recvTypes;
+    vec3<Pair<bool>> ifSendTypeCreated;
+    vec3<Pair<bool>> ifRecvTypeCreated;
+
     vec3<Pair<Boards>> sendBoards;
     vec3<Pair<Boards>> recvBoards;
-    vec3<Array3d<double>> tmpArray;
+
     Operation operation;
 
     vec3<bool> ifExchange;
     bool ifSubarrInit = false;
 
 public:
-    MPIWrapperGrid() {}
-    MPIWrapperGrid(vec3<int> np): MPIWrapper3d(np) {}
+    MPIWrapperGrid() {
+        setFlagsFalse();
+    }
+    MPIWrapperGrid(vec3<int> np): MPIWrapper3d(np) {
+        setFlagsFalse();
+    }
     ~MPIWrapperGrid() {
         if (ifSubarrInit) freeSubarrays();
+        setFlagsFalse();
     }
 
     Stat initialize(vec3<int> mpiSize) {
@@ -108,21 +120,29 @@ public:
     Stat initialize(vec3<int> mpiSize, vec3<Pair<Boards>> sendBoards,
         vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
 
-    Stat initializeGuardExchangeInfo(vec3<Pair<Boards>> sendBoards,
+    Stat prepare(vec3<Pair<Boards>> sendBoards,
         vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
 
-    void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag, MPIRequest& request) const;
-    void recvGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag) const;
+    void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag, bool ifBlock);
+    void recvGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag);
 
-    void setIfExchange();
+    void accumulate(Array3d<double>& arr, Array3d<double>& tmpArray, Boards boards);
 
 protected:
+    void checkGuards();
 
     Stat createSubarrays(vec3<int> arrSize);
     void freeSubarrays();
 
     int getNeighbourRank(Coordinate coord, Side side) const;
 
-    void accumulateLocalSubarrays(Array3d<double>& tmpArr,
-        Array3d<double>& arr, const Boards& boards, Operation op) const;
+    void setFlagsFalse() {
+        ifSubarrInit = false;
+        for (int coord = 0; coord < 3; coord++) {
+            ifSendTypeCreated[coord].left =false;
+            ifSendTypeCreated[coord].right = false;
+            ifRecvTypeCreated[coord].left = false;
+            ifRecvTypeCreated[coord].right = false;
+        }
+    }
 };

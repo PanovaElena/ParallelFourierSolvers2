@@ -1,10 +1,15 @@
 #include "mpi_wrapper_3d.h"
+#include <sstream>
 
 Stat MPIWrapper3d::initialize(vec3<int> mpiSize)
 {
+    if (ifCartCreated) {
+        MPI_Comm_free(&cartComm);
+    }
     if (setSize(mpiSize) == Stat::ERROR)
         return Stat::ERROR;
     createCartTopology();
+    ifCartCreated = true;
     return Stat::OK;
 }
 
@@ -12,19 +17,28 @@ Stat MPIWrapper3d::setSize(vec3<int> size)
 {
     if (size.x*size.y*size.z > MPIWrapper::MPISize())
         return Stat::ERROR;
-    if (size.x*size.y*size.z == 0 || size.x*size.y*size.z == 1)
+    if (size.x*size.y*size.z == 0)
         return Stat::ERROR;
     this->size = size;
     return Stat::OK;
 }
 
-Stat MPIWrapper3d::MPIISendSubarray(Array3d<double>& arr, Boards boards,
-    vec3<int> dest, int tag, MPI_Request & request) const
+Stat MPIWrapper3d::MPISendSubarray(Array3d<double>& arr, Boards boards,
+    vec3<int> dest, int tag, bool ifBlock) const
 {
     MPI_Datatype subarray;
     if (createSubarray(subarray, boards, arr.size()) == Stat::ERROR)
         return Stat::ERROR;
-    MPI_Isend(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm, &request);
+
+    if (ifBlock) {
+        MPI_Send(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm);
+    }
+    else {
+        MPIRequest request;
+        MPI_Isend(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm, &request);
+        MPI_Request_free(&request);
+    }
+
     freeSubarray(subarray);
     return Stat::OK;
 }
@@ -73,27 +87,27 @@ Stat MPIWrapperGrid::initialize(vec3<int> mpiSize, vec3<Pair<Boards>> sendBoards
 {
     if (MPIWrapper3d::initialize(mpiSize) == Stat::ERROR)
         return Stat::ERROR;
-    if (initializeGuardExchangeInfo(sendBoards, recvBoards, globalArrSize, op)
+    if (prepare(sendBoards, recvBoards, globalArrSize, op)
         == Stat::ERROR)
         return Stat::ERROR;
     return Stat::OK;
 }
 
-Stat MPIWrapperGrid::initializeGuardExchangeInfo(vec3<Pair<Boards>> sendBoards,
+Stat MPIWrapperGrid::prepare(vec3<Pair<Boards>> sendBoards,
     vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op)
 {
     this->sendBoards = sendBoards;
     this->recvBoards = recvBoards;
     this->operation = op;
 
-    setIfExchange();
+    checkGuards();
 
     if (createSubarrays(globalArrSize) == Stat::ERROR)
         return Stat::ERROR;
     return Stat::OK;
 }
 
-void MPIWrapperGrid::setIfExchange()
+void MPIWrapperGrid::checkGuards()
 {
     for (int i = 0; i < 3; i++) {
         vec3<int> delta = sendBoards[i].left.right -
@@ -105,35 +119,35 @@ void MPIWrapperGrid::setIfExchange()
 }
 
 void MPIWrapperGrid::sendGuard(Array3d<double>& arr, Coordinate coord,
-    Side side, int _tag, MPIRequest & request) const
+    Side side, int tag, bool ifBlock)
 {
     if (!ifExchange[coord]) return;
-    int tag = (side == Side::left) ? _tag * 10 : _tag * 10 + 1;
     MPI_Datatype& subarray = sendTypes[coord].getElem(side);
-    MPI_Isend(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
-        tag, cartComm, &request);
-}
-
-void MPIWrapperGrid::recvGuard(Array3d<double>& arr, Coordinate coord, Side side, int _tag) const
-{
-    if (!ifExchange[coord]) return;
-    int tag = (side == Side::left) ? _tag * 10 + 1 : _tag * 10;
-    MPI_Datatype& subarray = recvTypes[coord].getElem(side);
-
-    if (operation != Operation::copy) {
-        MPI_Recv(&(tmpArray[coord][0]), 1, subarray, getNeighbourRank(coord, side),
-            tag, cartComm, MPI_STATUS_IGNORE);
-        accumulateLocalSubarrays(tmpArray[coord], arr, recvBoards[coord].getElem(side), operation);
+    if (ifBlock) {
+        MPI_Send(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
+            tag, cartComm);
     }
     else {
-        MPI_Recv(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
-            tag, cartComm, MPI_STATUS_IGNORE);
+        MPIRequest request;
+        MPI_Isend(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
+            tag, cartComm, &request);
+        MPI_Request_free(&request);
     }
+}
+
+void MPIWrapperGrid::recvGuard(Array3d<double>& arr,
+    Coordinate coord, Side side, int tag)
+{
+    if (!ifExchange[coord]) return;
+    MPI_Datatype& subarray = recvTypes[coord].getElem(side);
+    MPI_Recv(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
+        tag, cartComm, MPI_STATUS_IGNORE);
 }
 
 Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
 {
     if (ifSubarrInit) freeSubarrays();
+
     for (int coord = 0; coord < 3; coord++) {
         if (!ifExchange[coord]) continue;
 
@@ -141,23 +155,33 @@ Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
         if (sendBoards[coord].left.right - sendBoards[coord].left.left !=
             sendBoards[coord].right.right - sendBoards[coord].right.left)
             return Stat::ERROR;
+
         createSubarray(sendTypes[coord].left, sendBoards[coord].left, arrSize);
+        ifSendTypeCreated[coord].left = true;
+
         createSubarray(sendTypes[coord].right, sendBoards[coord].right, arrSize);
+        ifSendTypeCreated[coord].right = true;
 
         // recv
         if (recvBoards[coord].left.right - recvBoards[coord].left.left !=
             recvBoards[coord].right.right - recvBoards[coord].right.left)
             return Stat::ERROR;
+
         if (operation == Operation::copy) {
             createSubarray(recvTypes[coord].left, recvBoards[coord].left, arrSize);
+            ifRecvTypeCreated[coord].left = true;
+
             createSubarray(recvTypes[coord].right, recvBoards[coord].right, arrSize);
+            ifRecvTypeCreated[coord].right = true;
         }
         else {
             vec3<int> n = recvBoards[coord].left.right - recvBoards[coord].left.left;
-            Boards b = Boards(vec3<int>(0), n);
-            createSubarray(recvTypes[coord].left, b, arrSize);
-            createSubarray(recvTypes[coord].right, b, arrSize);
-            tmpArray[coord].initialize(n);
+
+            createSubarray(recvTypes[coord].left, Boards(vec3<int>(0), n), n);
+            ifRecvTypeCreated[coord].left = true;
+
+            createSubarray(recvTypes[coord].right, Boards(vec3<int>(0), n), n);
+            ifRecvTypeCreated[coord].right = true;
         }
     }
     ifSubarrInit = true;
@@ -166,14 +190,25 @@ Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
 
 void MPIWrapperGrid::freeSubarrays()
 {
-    ifSubarrInit = false;
     for (int coord = 0; coord < 3; coord++) {
-        if (!ifExchange[coord]) continue;
-        freeSubarray(sendTypes[coord].left);
-        freeSubarray(sendTypes[coord].right);
-        freeSubarray(recvTypes[coord].left);
-        freeSubarray(recvTypes[coord].right);
+        if (ifSendTypeCreated[coord].left) {
+            freeSubarray(sendTypes[coord].left);
+            ifSendTypeCreated[coord].left = false;
+        }
+        if (ifSendTypeCreated[coord].right) {
+            freeSubarray(sendTypes[coord].right);
+            ifSendTypeCreated[coord].right = false;
+        }
+        if (ifRecvTypeCreated[coord].left) {
+            freeSubarray(recvTypes[coord].left);
+            ifRecvTypeCreated[coord].left = false;
+        }
+        if (ifRecvTypeCreated[coord].right) {
+            freeSubarray(recvTypes[coord].right);
+            ifRecvTypeCreated[coord].right = false;
+        }
     }
+    ifSubarrInit = false;
 }
 
 int MPIWrapperGrid::getNeighbourRank(Coordinate coord, Side side) const
@@ -188,16 +223,16 @@ int MPIWrapperGrid::getNeighbourRank(Coordinate coord, Side side) const
     }
 }
 
-void MPIWrapperGrid::accumulateLocalSubarrays(Array3d<double>& tmpArr, Array3d<double>& arr,
-    const Boards & boards, Operation op) const
+void MPIWrapperGrid::accumulate(Array3d<double>& arrTo, Array3d<double>& arrFrom, Boards boards)
 {
-    if (op == Operation::sum) {
+    if (operation == Operation::sum) {
+        bool f = true;
 #pragma omp parallel for
         for (int i = boards.left.x; i < boards.right.x; i++)
             for (int j = boards.left.y; j < boards.right.y; j++)
                 // #pragma omp simd
                 for (int k = boards.left.z; k < boards.right.z; k++)
-                    arr(i, j, k) += tmpArr(i - boards.left.x,
+                    arrTo(i, j, k) += arrFrom(i - boards.left.x,
                         j - boards.left.y, k - boards.left.z);
     }
 }

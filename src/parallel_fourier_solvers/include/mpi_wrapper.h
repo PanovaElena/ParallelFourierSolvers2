@@ -32,6 +32,7 @@ public:
         MPI_Status status;
         if (MPI_Wait(&request, &status) != 0)
             std::cout << "ERROR REQUEST" << std::endl;
+        MPI_Request_free(&request);
     }
     static void MPIInitialize(int& argc, char**& argv) {
         MPI_Init(&argc, &argv);

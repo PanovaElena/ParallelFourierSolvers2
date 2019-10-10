@@ -1,15 +1,21 @@
 #pragma once
 #include <memory>
 #include <iostream>
+#include <functional>
 #include "mpi_wrapper_3d.h"
 #include "status.h"
 #include "parallel_scheme.h"
 
 class MPIWorker {
 private:
+    static const int NFIELDS = 2;
+    static const int NCOORDS = 3;
+
     std::shared_ptr<MPIWrapperGrid> mpiWrapper;
     std::shared_ptr<ParallelScheme> scheme;
     Grid3d* grid = 0;
+
+    vec3<Array3d<double>> tmpArrays;  // for sum scheme
 
 public:
     MPIWorker() {}
@@ -31,13 +37,9 @@ private:
         return ((a + b) % b);
     }
 
-    Stat send(const Boards& boards, vec3<int> dest, MPIWrapper::MPIRequest* const requests,
-        Grid3d& gridFrom);
-    Stat recv(const Boards& boards, vec3<int> source, Grid3d& gridTo);
-
-    Stat sendGuard(Coordinate coord, Side side, MPIWrapper::MPIRequest* const requests);
-    Stat recvGuard(Coordinate coord, Side side);
-    void wait(MPIWrapper::MPIRequest* const requests);
+    // do smth in func for every field in grid
+    // Array3d is array of field, int is tag of field
+    void doForEveryField(Grid3d& grid, std::function<void(Array3d<double>&, int)> func);
 
     void exchangeTwoProcesses(Coordinate coord);
 

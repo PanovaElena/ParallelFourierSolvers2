@@ -21,10 +21,10 @@ void ParallelSchemeSum::setBoardsForExchange()
         sendBoards[i].left.right = 2 * guardSize * base + fullInvBase;
         sendBoards[i].right.left = domainSize * base;
         sendBoards[i].right.right = fullSize * base + fullInvBase;
-        recvBoards[i].right.left = domainSize * base;
-        recvBoards[i].right.right = fullSize * base + fullInvBase;
         recvBoards[i].left.left = vec3<int>(0);
         recvBoards[i].left.right = 2 * guardSize * base + fullInvBase;
+        recvBoards[i].right.left = domainSize * base;
+        recvBoards[i].right.right = fullSize * base + fullInvBase;
     }
 }
 

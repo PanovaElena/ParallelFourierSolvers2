@@ -276,6 +276,7 @@ __pycache__/
 *.csv
 *.img
 *.png
+./scripts/running_wave/time_scripts/*
 
 # System file
 *Thumbs.db
