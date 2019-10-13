@@ -17,20 +17,20 @@ public:
     double c = step * d;
     FourierTransformOfGrid ft;
 
-    FieldFunc fE;
-    FieldFunc fB;
-    FieldFunc fJ;
+    GridParams::FieldFunc fE;
+    GridParams::FieldFunc fB;
+    GridParams::FieldFunc fJ;
 
     void initializeFieldFuncs() {
-        fE = [this](vec3<int> index, double t) {
+        fE = [this](vec3<int> index, double t, const GridParams&) {
             double v = A * sin(2 * constants::pi*(index.x*gr.getStep().x +
                 index.y * gr.getStep().y + index.z * gr.getStep().z) / (b - a));
             return vec3<>(v, 0, 0);
         };
 
-        fB = [this](vec3<int> index, double t) { return vec3<>(0); };
+        fB = [this](vec3<int> index, double t, const GridParams&) { return vec3<>(0); };
 
-        fJ = [this](vec3<int> index, double t) {return vec3<>(0); };
+        fJ = [this](vec3<int> index, double t, const GridParams&) {return vec3<>(0); };
     }
 
     double f(vec3<int> index) {

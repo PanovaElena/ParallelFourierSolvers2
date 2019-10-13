@@ -13,7 +13,7 @@ class TestRunningWaveParallel : public TestParallel {
     ParallelFourierSolver parallelSolver;
 
 public:
-    void setParamsForTest(ParametersForRunningWave p) {
+    void setParamsForTest(const ParametersForRunningWave& p) {
         task.setParamsForTest(p);
     }
 
@@ -54,12 +54,6 @@ public:
         if (initializeParallelSolver() == Stat::ERROR)
             return Stat::ERROR;
 
-        //std::cout << "start par: domain from " << parallelSolver.getDomainStart() << " to " <<
-        //    parallelSolver.getDomainEnd() << "; guard is " << parallelSolver.getGuardSize() <<"\n";
-
-        //std::cout << "writing to file first domain\n";
-        //parallelSolver.writeFile(nameFileAfterDivision);
-
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
             task.params.fieldSolver->doFourierTransform(RtoC);
             fw.write(parallelSolver.getGrid(), "spectrum_after_div.csv", Complex);
@@ -74,9 +68,6 @@ public:
         double t2 = omp_get_wtime();
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
             std::cout << "Time of parallel version is " << t2 - t1 << "\n";
-
-        //std::cout << "writing to file parallel result\n";
-        //parallelSolver.writeFile(nameFileAfterExchange);
 
         //std::cout << "assemble\n";
         parallelSolver.assembleResults(task.grid);

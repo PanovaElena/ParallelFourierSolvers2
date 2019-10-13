@@ -48,9 +48,8 @@ public:
         fieldSolver.reset(new FieldSolverPSATD());
         vec3<> a(0), d(constants::c);
         vec3<int> n(32);
-        auto lambda = [](vec3<int>, double) {return vec3<>(0); };
-        gridParams.initialize(a, d, n, lambda, lambda, lambda,
-            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+        gridParams.initialize(a, d, n);
+        gridParams.setShifts(fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
         dt = 0.1;
         nSeqSteps = 0;
     }

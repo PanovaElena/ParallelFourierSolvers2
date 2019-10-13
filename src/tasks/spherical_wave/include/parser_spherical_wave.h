@@ -23,9 +23,9 @@ public:
             std::endl;
     }
 
-    Status saveArgs(TaskParameters& p, Task task) override {
-        Status s = TaskParser::saveArgs(p, task);
-        if (s == Status::ERROR || s == Status::STOP) return s;
+    Stat saveArgs(TaskParameters& p, Task task) override {
+        Stat s = TaskParser::saveArgs(p, task);
+        if (s == Stat::ERROR || s == Stat::STOP) return s;
 
         ParametersForSphericalWave& params = static_cast<ParametersForSphericalWave&>(p);
 
@@ -42,7 +42,7 @@ public:
         if (m.find("-stime") != m.end()) params.source.time = std::stod(m.find("-stime")->second);
         if (m.find("-stimest") != m.end()) params.source.startTime = std::stod(m.find("-stimest")->second);
 
-        return Status::OK;
+        return Stat::OK;
 
     }
 };

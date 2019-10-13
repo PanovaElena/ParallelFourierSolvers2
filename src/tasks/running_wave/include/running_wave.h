@@ -30,7 +30,7 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
         ParallelTaskParameters::setDefaultValues();
         vec3<int> n(64, 1, 64);
         vec3<> a(0), d(1);
-        FieldFunc fE, fB, fJ;
+        GridParams::FieldFunc fE, fB, fJ;
         setFieldFuncs(fE, fB, fJ);
         gridParams.initialize(a, d, n, fE, fB, fJ,
             fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
@@ -52,14 +52,14 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
         return sin(2 * constants::pi / lambda * (x2 - constants::c*t));
     }
 
-    void setFieldFuncs(FieldFunc& fE, FieldFunc& fB, FieldFunc& fJ) {
-        fE = [this](vec3<int> ind, int iter) {
+    void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
+        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
             vec3<double> EyCoord = gridParams.getCoord(ind, E, y);
             double tE = gridParams.shiftT[E] * dt;
             return vec3<double>(0, f(EyCoord.x, EyCoord.z, tE), 0);
         };
 
-        fB = [this](vec3<int> ind, int iter) {
+        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
             vec3<double> BxCoord = gridParams.getCoord(ind, B, x);
             vec3<double> BzCoord = gridParams.getCoord(ind, B, z);
             double tB = gridParams.shiftT[B] * dt;
@@ -67,7 +67,9 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
                 cos(angle)*f(BxCoord.x, BzCoord.x, tB));
         };
 
-        fJ = [this](vec3<int> ind, int iter) {return vec3<>(0); };
+        fJ = [](vec3<int> ind, int iter, const GridParams& gridParams) {
+            return vec3<>(0);
+        };
     }
 
     void print(std::ostream& ost = std::cout) const {
@@ -105,5 +107,7 @@ public:
     void initialize() {
         grid.initialize(params.gridParams);
         params.fieldSolver->initialize(grid);
+        grid.setShifts(params.fieldSolver->getSpatialShift(),
+            params.fieldSolver->getTimeShift());
     }
 };

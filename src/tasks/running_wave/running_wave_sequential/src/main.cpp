@@ -1,11 +1,11 @@
-#include "parser_running_wave.h"
 #include <string>
 #include <iostream>
 #include <omp.h>
+#include "parser_running_wave.h"
 #include "running_wave.h"
 #include "fourier_transform.h"
 #include "field_solver.h"
-#include "fftw3.h"
+
 
 void testBody(RunningWave& runningWave) {
 
@@ -39,7 +39,6 @@ int main(int argc, char** argv) {
         std::cout << "ERROR: wrong status" << std::endl;
         return 0;
     }
-    params.nParSteps = 0;
     params.print();
 
     runningWave.setParamsForTest(params);

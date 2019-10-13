@@ -9,14 +9,15 @@ import read_file as rf
 import compute_error as ce
 import args
 
-DIR_SCRIPT = "./"+os.path.dirname(sys.argv[0])
-FOLDER="/Release/"
+DIR_PICTURES = "./pictures/"
+DIR_SCRIPT = "./"+os.path.dirname(sys.argv[0]) 
 
-MPI="mpiexec"
-#MPI="\"C:\Program Files\Microsoft MPI\Bin\mpiexec\""
+if (sys.platform == "win32"):
+	MPI = "mpiexec"
+else: MPI = "mpirun"
 
-NAME_SEQ_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/src/tasks/spherical_wave/spherical_wave_sequential/"+FOLDER+"/spherical_wave_sequential"+"\""
-NAME_PAR_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/src/tasks/spherical_wave/spherical_wave_parallel/"+FOLDER+"/spherical_wave_parallel"+"\""
+NAME_SEQ_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/spherical_wave_sequential"+"\""
+NAME_PAR_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/spherical_wave_parallel"+"\""
 
 DIR_PICTURES = "./pictures/"
 DIR_RESULTS = "./results/"

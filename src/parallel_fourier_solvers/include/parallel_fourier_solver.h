@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <functional>
 #include "grid3d.h"
 #include "status.h"
 #include "grid_params.h"
@@ -52,7 +53,7 @@ public:
     void applyMask();
     void applyFilter();
 
-    void run(int numIter, int maxIterBetweenExchange, double dt);
+    void run(int numIter, int maxIterBetweenExchange, double dt, bool writeFile = true);
     void assembleResults(Grid3d& commonGrid) {
         mpiWorker.assembleResultsToRoot(commonGrid);
     }
@@ -82,13 +83,14 @@ private:
     Stat init(const GridParams& globalGP, vec3<int> guardSize,
         const Mask& mask, const Filter& filter, vec3<int> size,
         const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-        const FileWriter& fileWriter);
+        const FileWriter& fileWriter, std::function<void()> setLocalGridF);
 
     Stat validate();  // only after processInfo init
 
     void setDomainInfo(vec3<int> globalSize, vec3<int> guardSize);  // only after processInfo init
 
-    void createGrid(const GridParams& globalGP);
+    void setLocalGrid(const GridParams& globalGP);
+    void setLocalGrid(const Grid3d & globalGrid);
 
     GridParams getLocalGridParams(const GridParams& globalGP);
 

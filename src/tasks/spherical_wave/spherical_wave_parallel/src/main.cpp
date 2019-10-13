@@ -2,19 +2,19 @@
 #include <string>
 #include <iostream>
 #include "test_parallel.h"
-#include "test_running_wave_parallel.h"
-#include "parser_running_wave.h"
+#include "test_spherical_wave_parallel.h"
+#include "parser_spherical_wave.h"
 #include "status.h"
 
 int main(int argc, char** argv) {
     MPIWrapper::MPIInitialize(argc, argv);
     fftw_init_threads();
-    ParametersForRunningWave params;
-    ParserRunningWave parser;
+    ParametersForSphericalWave params;
+    ParserSphericalWave parser;
     Stat status = parser.parseArgsForParallel(argc, argv, params);
     if (status == Stat::OK) {
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) params.print();
-        TestRunningWaveParallel test;
+        TestSphericalWaveParallel test;
         test.setParamsForTest(params);
         Stat status2 = test.testBody();
         if (status == Stat::ERROR)

@@ -14,24 +14,26 @@ public:
     FourierTransformOfGrid ft;
     Grid3d grid;
 
-    FieldFunc fE;
-    FieldFunc fB;
-    FieldFunc fJ;
+    GridParams::FieldFunc fE;
+    GridParams::FieldFunc fB;
+    GridParams::FieldFunc fJ;
 
     void initializeFieldFuncs() {
-        fE = [this](vec3<int> index, double t) {
+        fE = [this](vec3<int> index, double t, const GridParams&) {
             return vec3<>(A * sin(2 * constants::pi*index.x / nx),
                 A * sin(2 * constants::pi*index.x / nz),
                 A * sin(2 * constants::pi*index.x / ny));
         };
 
-        fB = [this](vec3<int> index, double t) {
+        fB = [this](vec3<int> index, double t, const GridParams&) {
             return vec3<>(A * sin(2 * constants::pi*index.x / nx),
                 A * sin(2 * constants::pi*index.x / nz),
                 A * sin(2 * constants::pi*index.x / ny));
         };
 
-        fJ = [this](vec3<int> index, double t) {return vec3<>(0); };
+        fJ = [this](vec3<int> index, double t, const GridParams&) {
+            return vec3<>(0);
+        };
     }
 
     TestFourierTransform() {

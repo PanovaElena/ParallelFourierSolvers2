@@ -87,13 +87,13 @@ Stat MPIWrapperGrid::initialize(vec3<int> mpiSize, vec3<Pair<Boards>> sendBoards
 {
     if (MPIWrapper3d::initialize(mpiSize) == Stat::ERROR)
         return Stat::ERROR;
-    if (prepare(sendBoards, recvBoards, globalArrSize, op)
+    if (prepareExchanges(sendBoards, recvBoards, globalArrSize, op)
         == Stat::ERROR)
         return Stat::ERROR;
     return Stat::OK;
 }
 
-Stat MPIWrapperGrid::prepare(vec3<Pair<Boards>> sendBoards,
+Stat MPIWrapperGrid::prepareExchanges(vec3<Pair<Boards>> sendBoards,
     vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op)
 {
     this->sendBoards = sendBoards;

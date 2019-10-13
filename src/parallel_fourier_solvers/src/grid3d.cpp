@@ -36,11 +36,8 @@ void Grid3d::initialize(const GridParams& gridParams) {
     BF.initialize({ n.x, n.y, n.z / 2 + 1 });
     JF.initialize({ n.x, n.y, n.z / 2 + 1 });
 
-    if (this->gridParams.fE != 0 &&
-        this->gridParams.fB != 0 &&
-        this->gridParams.fJ != 0)
-    setFields();
-
+    if (this->gridParams.isFieldFuncsSetted())
+        setFields();
 }
 
 void Grid3d::setFields() {
@@ -51,6 +48,13 @@ void Grid3d::setFields() {
                 B.write(i, j, k, gridParams.fB({ i,j,k }, 0.0));
                 J.write(i, j, k, gridParams.fJ({ i,j,k }, 0.0));
             }
+}
+
+void Grid3d::setJ(int iter) {
+    for (int i = 0; i < sizeReal().x; i++)
+        for (int j = 0; j < sizeReal().y; j++)
+            for (int k = 0; k < sizeReal().z; k++)
+                J.write(i, j, k, gridParams.fJ({ i,j,k }, iter));
 }
 
 int Grid3d::operator==(const Grid3d& gr) {

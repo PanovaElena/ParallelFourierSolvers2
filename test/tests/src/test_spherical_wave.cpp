@@ -30,8 +30,7 @@ public:
     {
         params.dt = 0.5;
         params.nSeqSteps = 40;
-        params.nParSteps = 10;
-        nIterBetweenDumps = 10;
+        params.nParSteps = 0;
     }
 
     void MyTestBodyWrite(FieldSolver& fs) {
@@ -40,20 +39,17 @@ public:
         write(fileWriterE, 0);
         write(fileWriterB, 0);
 
-        params.fieldSolver->doFourierTransform(RtoC);
-
         for (int iter = 0; iter < params.getNSteps(); iter++) {
-
-            params.fieldSolver->doFourierTransform(CtoR);
             if (iter%nIterBetweenDumps == 0) {
                 write(fileWriterE, iter);
                 write(fileWriterB, iter);
                 write(fileWriterJ, iter);
             }
-            setJ(iter);
-            params.fieldSolver->doFourierTransform(RtoC);
+            grid.setJ(iter);
 
+            params.fieldSolver->doFourierTransform(RtoC);
             params.fieldSolver->run(params.dt);
+            params.fieldSolver->doFourierTransform(CtoR);
 
         }
 
@@ -73,7 +69,7 @@ public:
 
     void plotJ() {
         int iter = 2;
-        setJ(iter);
+        grid.setJ(iter);
         write(fileWriterJ, iter);
     }
 

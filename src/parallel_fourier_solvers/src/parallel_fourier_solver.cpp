@@ -6,7 +6,8 @@ Stat ParallelFourierSolver::initialize(const Grid3d & globalGrid, vec3<int> guar
     const FileWriter& fileWriter)
 {
     return init(globalGrid.getGridParams(), guardSize, mask, filter,
-        mpiSize, scheme, fieldSolver, fileWriter);
+        mpiSize, scheme, fieldSolver, fileWriter,
+        [this, &globalGrid]() {this->setLocalGrid(globalGrid); });
 }
 
 Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> guardSize,
@@ -15,13 +16,14 @@ Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> gu
     const FileWriter& fileWriter)
 {
     return init(globalGP, guardSize, mask, filter,
-        mpiSize, scheme, fieldSolver, fileWriter);
+        mpiSize, scheme, fieldSolver, fileWriter,
+        [this, &globalGP]() {this->setLocalGrid(globalGP); });
 }
 
 Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
     const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
+    const FileWriter& fileWriter, std::function<void()> setLocalGridF)
 {
     this->scheme.reset(scheme.clone());
     this->mask.reset(mask.clone());
@@ -37,16 +39,17 @@ Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSiz
     if (validate() == Stat::ERROR)
         return Stat::ERROR;
     
-    createGrid(globalGP);
-    localGrid.setShifts(fieldSolver.getSpatialShift(), fieldSolver.getTimeShift());
+    localGrid.initialize(getLocalGridParams(globalGP));
     this->fieldSolver->initialize(localGrid);
+    localGrid.setShifts(fieldSolver.getSpatialShift(), fieldSolver.getTimeShift());
+    setLocalGridF();
 
     if (this->scheme->initialize(this->domainSize, this->guardSize) == Stat::ERROR)
         return Stat::ERROR;
     if (this->mpiWorker.initialize(mpiWrapper,
         this->scheme, &localGrid) == Stat::ERROR)
         return Stat::ERROR;
-    if (this->mpiWrapper->prepare(this->scheme->getSendBoards(),
+    if (this->mpiWrapper->prepareExchanges(this->scheme->getSendBoards(),
         this->scheme->getRecvBoards(), localGrid.sizeReal(), this->scheme->getOperation())
         == Stat::ERROR)
         return Stat::ERROR;
@@ -110,10 +113,9 @@ void ParallelFourierSolver::setDomainInfo(vec3<int> globalSize, vec3<int> guardS
     if (rank.z == size.z - 1) rightGuardStart.z = 0;
 }
 
-void ParallelFourierSolver::createGrid(const GridParams & globalGP)
+void ParallelFourierSolver::setLocalGrid(const GridParams & globalGP)
 {
-    GridParams localGP = getLocalGridParams(globalGP);
-    localGrid.initialize(localGP);
+    GridParams localGP = localGrid.getGridParams();
     for (int i = 0; i < localGP.n.x; i++)
         for (int j = 0; j < localGP.n.y; j++)
             for (int k = 0; k < localGP.n.z; k++) {
@@ -122,6 +124,20 @@ void ParallelFourierSolver::createGrid(const GridParams & globalGP)
                 localGrid.E.write(i, j, k, globalGP.fE(indexInGlobalGrid, 0));
                 localGrid.B.write(i, j, k, globalGP.fB(indexInGlobalGrid, 0));
                 localGrid.J.write(i, j, k, globalGP.fJ(indexInGlobalGrid, 0));
+            }
+}
+
+void ParallelFourierSolver::setLocalGrid(const Grid3d & globalGrid)
+{
+    GridParams localGP = localGrid.getGridParams();
+    for (int i = 0; i < localGP.n.x; i++)
+        for (int j = 0; j < localGP.n.y; j++)
+            for (int k = 0; k < localGP.n.z; k++) {
+                vec3<int> indexInGlobalGrid =
+                    mod(vec3<int>(i, j, k) + domainStart - guardSize, localGP.n);
+                localGrid.E.write(i, j, k, globalGrid.E(indexInGlobalGrid));
+                localGrid.B.write(i, j, k, globalGrid.B(indexInGlobalGrid));
+                localGrid.J.write(i, j, k, globalGrid.J(indexInGlobalGrid));
             }
 }
 
@@ -143,7 +159,8 @@ void ParallelFourierSolver::setFilter()
 {
 }
 
-void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double dt)
+void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double dt,
+    bool writeFile)
 {
     if (numIter == 0 || maxIterBetweenExchange == 0) return;
     int numExchanges = numIter / maxIterBetweenExchange;
@@ -153,12 +170,11 @@ void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double 
         doOneExchange(maxIterBetweenExchange, dt, false);
 
     if (numIterBeforeLastExchange != 0) {
-        doOneExchange(maxIterBetweenExchange, dt, false);
-        doOneExchange(numIterBeforeLastExchange, dt, true);
+        if (numExchanges != 0)
+            doOneExchange(maxIterBetweenExchange, dt, false);
+        doOneExchange(numIterBeforeLastExchange, dt, writeFile);
     }
-    else {
-        doOneExchange(maxIterBetweenExchange, dt, true);
-    }
+    else doOneExchange(maxIterBetweenExchange, dt, writeFile);
 }
 
 void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)

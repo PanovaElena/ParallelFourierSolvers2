@@ -9,10 +9,10 @@ import args
 
 DIR_SCRIPT = "./"+os.path.dirname(sys.argv[0])
 if (sys.platform == "win32"):
-	FOLDER="/Release/"
-else: FOLDER=""
+	MPI = ""
+else: MPI = "mpirun"
 
-NAME_SEQ_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/src/tasks/spherical_wave/spherical_wave_sequential/"+FOLDER+"/spherical_wave_sequential"+"\""
+NAME_SEQ_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/spherical_wave_sequential"+"\""
 
 DIR_RESULTS = "./results/"
 
@@ -23,8 +23,6 @@ if (os.path.exists(DIR_RESULTS)):
 		for file in filenames:
 			os.remove(DIR_RESULTS+file)
 else: os.mkdir(DIR_RESULTS)
-		
-funcRead = rf.readFile2d
 
 # sequential
 

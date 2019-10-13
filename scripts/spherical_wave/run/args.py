@@ -57,18 +57,18 @@ n_iter = 400
 
 # parameters for parallel launch
 
-scheme = "sum"    # scheme of exchange: sum or copy
+scheme = "copy"    # scheme of exchange: sum or copy
 
 # num of processes
 
 npx = 2
-npy = 2
+npy = 1
 npz = 1
 
 # dimension of guard (number of cells of the grid)
 
 gx = 32
-gy = 32
+gy = 0
 gz = 0
 
 # number of sequential (first) and parallel (second) iterations
@@ -79,7 +79,7 @@ n_parallel_iter = n_iter-n_sequential_iter
 # max number of iterations in every domain
 # if scheme=copy max distance should be half of the guard width
 
-number_of_iterations_in_domain = int(0.4*gx*dx/LIGHT_SPEED/dt)
+number_of_iterations_in_domain = 1 #int(0.4*gx*dx/LIGHT_SPEED/dt)
 
 # parameters of mask
 

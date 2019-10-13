@@ -27,7 +27,7 @@ struct ParametersForSphericalWave : public ParallelTaskParameters {
         ParallelTaskParameters::setDefaultValues();
         vec3<int> n(64, 64, 1);
         vec3<>  d(constants::c), a(-1 * (vec3<>)(n / 2) * d);
-        FieldFunc fE, fB, fJ;
+        GridParams::FieldFunc fE, fB, fJ;
         setFieldFuncs(fE, fB, fJ);
         gridParams.initialize(a, d, n, fE, fB, fJ,
             fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
@@ -45,19 +45,19 @@ struct ParametersForSphericalWave : public ParallelTaskParameters {
         source.coord = vec3<double>(0, 0, 0);
         source.startTime = 0;
 
-        fileWriter.initialize("./", E, y, Section(Section::XOY, Section::center));
+        fileWriter.initialize("./", E, z, Section(Section::XOY, Section::center));
     }
 
-    void setFieldFuncs(FieldFunc& fE, FieldFunc& fB, FieldFunc& fJ) {
-        fE = [this](vec3<int> ind, int iter) {
+    void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
+        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
             return vec3<>(0);
         };
 
-        fB = [this](vec3<int> ind, int iter) {
+        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
             return vec3<>(0);
         };
 
-        fJ = [this](vec3<int> ind, int iter) {
+        fJ = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
             vec3<> coord = gridParams.getCoord(ind, J, z);
             double t = gridParams.getTime(iter, dt, source.startTime, J);
             return vec3<>(0, 0, source.getJ(coord, t));
@@ -96,14 +96,8 @@ public:
     void initialize() {
         grid.initialize(params.gridParams);
         params.fieldSolver->initialize(grid);
+        grid.setShifts(params.fieldSolver->getSpatialShift(),
+            params.fieldSolver->getTimeShift());
     }
-
-    void setJ(int iter) {
-        for (int i = 0; i < grid.sizeReal().x; i++)
-            for (int j = 0; j < grid.sizeReal().y; j++)
-                for (int k = 0; k < grid.sizeReal().z; k++)
-                    grid.J.write(i, j, k, params.gridParams.fJ({ i,j,k }, iter));
-    }
-
 };
 

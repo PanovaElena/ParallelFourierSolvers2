@@ -120,7 +120,7 @@ public:
     Stat initialize(vec3<int> mpiSize, vec3<Pair<Boards>> sendBoards,
         vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
 
-    Stat prepare(vec3<Pair<Boards>> sendBoards,
+    Stat prepareExchanges(vec3<Pair<Boards>> sendBoards,
         vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
 
     void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag, bool ifBlock);

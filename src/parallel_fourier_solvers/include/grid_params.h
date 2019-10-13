@@ -2,16 +2,21 @@
 #include <functional>
 #include "vector3d.h"
 
-typedef std::function<vec3<double>(vec3<int>, int)> FieldFunc;
 
 struct GridParams {
+public:
+    typedef std::function<vec3<double>(vec3<int>, int, const GridParams&)> FieldFunc;
+
+protected:
+    FieldFunc funcE;
+    FieldFunc funcB;
+    FieldFunc funcJ;
+
+public:
+
     vec3<double> a;
     vec3<double> d;
     vec3<int> n;
-
-    FieldFunc fE;
-    FieldFunc fB;
-    FieldFunc fJ;
 
     vec3<double> shiftT;  // [field]
     vec3<vec3<vec3<double>>> shiftSp;  // [field][coord] -> vec3
@@ -41,6 +46,10 @@ struct GridParams {
         this->a = a;
         this->d = d;
         this->n = n;
+        auto lambda = [](vec3<int>, double, const GridParams&) {return vec3<>(0); };
+        funcE = lambda;
+        funcB = lambda;
+        funcJ = lambda;
     }
 
     void initialize(vec3<> a, vec3<> d, vec3<int> n,
@@ -59,9 +68,9 @@ struct GridParams {
     }
 
     void setFieldFuncs(FieldFunc fE, FieldFunc fB, FieldFunc fJ) {
-        this->fE = fE;
-        this->fB = fB;
-        this->fJ = fJ;
+        this->funcE = fE;
+        this->funcB = fB;
+        this->funcJ = fJ;
     }
 
     void setShifts(const vec3<vec3<vec3<>>>& shiftSp,
@@ -72,6 +81,22 @@ struct GridParams {
 
     vec3<> b() const {
         return a + (vec3<>)n * d;
+    }
+
+    bool isFieldFuncsSetted() const {
+        return funcE != 0 && funcB != 0 && funcJ != 0;
+    }
+
+    vec3<> fE(vec3<int> ind, int iter) const {
+        return funcE(ind, iter, *this);
+    }
+
+    vec3<> fB(vec3<int> ind, int iter) const {
+        return funcB(ind, iter, *this);
+    }
+
+    vec3<> fJ(vec3<int> ind, int iter) const {
+        return funcJ(ind, iter, *this);
     }
 
     vec3<double> getCoord(vec3<double> node) const {
@@ -98,11 +123,11 @@ struct GridParams {
         return vec3<int>(x, y, z);
     }
 
-    double getTime(int iter, double dt, double startTime = 0) {
+    double getTime(int iter, double dt, double startTime = 0) const {
         return iter * dt + startTime;
     }
 
-    double getTime(int iter, double dt, double startTime, Field field) {
+    double getTime(int iter, double dt, double startTime, Field field) const {
         return (iter + shiftT[field])* dt + startTime;
     }
 };

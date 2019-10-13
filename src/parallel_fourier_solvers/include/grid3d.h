@@ -11,7 +11,7 @@ struct FieldForGrid : public vec3<Array3d<T>> {
     vec3<T> operator() (int i, int j, int k) {
         return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
     }
-    vec3<T> operator() (vec3<int> ind) {
+    vec3<T> operator() (vec3<int> ind) const {
         int i = ind.x; int j = ind.y; int k = ind.z;
         return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
     }
@@ -71,6 +71,7 @@ public:
 
     void initialize(const GridParams& params);
     void setFields();
+    void setJ(int iter);
 
     vec3<int> sizeReal() const;
     vec3<int> sizeComplex() const;
