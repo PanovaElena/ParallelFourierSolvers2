@@ -16,6 +16,7 @@
 # If already in cache, be silent
 if (MKL_INCLUDE_DIRS AND MKL_LIBRARIES)
     set (MKL_FIND_QUIETLY TRUE)
+    set (MKL_FIND_QUIETLY TRUE)
 endif()
 
 set(MKLROOT $ENV{MKLROOT})
@@ -50,31 +51,30 @@ if (USE_OMP)
          MKL_CORE_LIB AND
          MKL_BLACS_INTELMPI_ILP64_LIB)
          
-        set(MKL_LIBRARIES ${MKL_CDFT_CORE_LIB} ${MKL_INTEL_ILP64_LIB} ${MKL_INTEL_THREAD_LIB} ${MKL_CORE_LIB} ${MKL_BLACS_INTELMPI_ILP64_LIB})
+        set(MKL_LIBRARIES "${MKL_CDFT_CORE_LIB} ${MKL_INTEL_ILP64_LIB} ${MKL_INTEL_THREAD_LIB} \
+            ${MKL_CORE_LIB} ${MKL_BLACS_INTELMPI_ILP64_LIB}")
         
         # ICC
         if (${CMAKE_CXX_COMPILER} MATCHES "icc.*$" OR ${CMAKE_CXX_COMPILER} MATCHES "icl.*$")
             if (WIN32)
                 find_libomp5_win32()
                 set(MKL_LIBRARIES ${MKL_LIBRARIES} ${IOMP5})
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
             elseif(UNIX)
-                set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -liomp5 -lpthread -lm -ldl)
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+                set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -liomp5 -lpthread -lm -ldl")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
             endif()
         endif()
         
         # GCC
         if (${CMAKE_CXX_COMPILER} MATCHES "gcc.*$")
-            set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lgomp -lpthread -lm -ldl)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+            set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lgomp -lpthread -lm -ldl")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
         endif()
         
         # MSVC
         if (MSVC AND NOT ${CMAKE_CXX_COMPILER} MATCHES "icl.*$") 
             find_libomp5_win32()
             set(MKL_LIBRARIES ${MKL_LIBRARIES} ${IOMP5})
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         endif()
            
         # Handle the QUIETLY and REQUIRED arguments and set MKL_FOUND to TRUE if
@@ -111,11 +111,12 @@ else()  # USE_OMP
          MKL_CORE_LIB AND
          MKL_BLACS_INTELMPI_ILP64_LIB)
          
-        set(MKL_LIBRARIES ${MKL_CDFT_CORE_LIB} ${MKL_INTEL_ILP64_LIB} ${MKL_INTEL_SEQUENTIAL_LIB} ${MKL_CORE_LIB} ${MKL_BLACS_INTELMPI_ILP64_LIB})
+        set(MKL_LIBRARIES "${MKL_CDFT_CORE_LIB} ${MKL_INTEL_ILP64_LIB} ${MKL_INTEL_SEQUENTIAL_LIB} \
+            ${MKL_CORE_LIB} ${MKL_BLACS_INTELMPI_ILP64_LIB}")
                 
         if (UNIX)
             set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lpthread -lm -ldl")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
         elseif(WIN32)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DMKL_ILP64")
         endif()
