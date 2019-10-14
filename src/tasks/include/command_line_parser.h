@@ -39,7 +39,7 @@ protected:
         }
         else {
             for (int i = 1; i < argc && i + 1 < argc; i += 2)
-                m.emplace(argv[i], argv[i + 1]);
+                m.insert(std::pair<std::string, std::string>(argv[i], argv[i + 1]));
         }
         return Stat::OK;
     }

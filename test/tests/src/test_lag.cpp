@@ -22,15 +22,15 @@ public:
     GridParams::FieldFunc fJ;
 
     void initializeFieldFuncs() {
-        fE = [this](vec3<int> index, double t, const GridParams&) {
+        fE = [this](vec3<int> index, double t, const GridParams&) -> vec3<double> {
             double v = A * sin(2 * constants::pi*(index.x*gr.getStep().x +
                 index.y * gr.getStep().y + index.z * gr.getStep().z) / (b - a));
             return vec3<>(v, 0, 0);
         };
 
-        fB = [this](vec3<int> index, double t, const GridParams&) { return vec3<>(0); };
+        fB = [this](vec3<int> index, double t, const GridParams&) -> vec3<double> { return vec3<>(0); };
 
-        fJ = [this](vec3<int> index, double t, const GridParams&) {return vec3<>(0); };
+        fJ = [this](vec3<int> index, double t, const GridParams&) -> vec3<double> {return vec3<>(0); };
     }
 
     double f(vec3<int> index) {

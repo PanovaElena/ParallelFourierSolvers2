@@ -27,12 +27,12 @@ public:
 
     void write(FileWriter& fileWriter, int iter, std::string name = "") {
         if (name == "")
-            name = params.fieldSolver->to_string()+"_iter_" + std::to_string(iter) + "_coord_" +
-            std::to_string(fileWriter.getCoord()) + ".csv";
+            name = params.fieldSolver->to_string()+"_iter_" + std::to_string((long long)iter) + "_coord_" +
+            std::to_string((long long)fileWriter.getCoord()) + ".csv";
         fileWriter.write(grid, name);
     }
 
-    void MyTestBodyWrite(FieldSolver& fs) {
+    void MyTestBodyWrite(const FieldSolver& fs) {
         params.setFieldSolver(fs, grid);
 
         write(fileWriterE, 0);

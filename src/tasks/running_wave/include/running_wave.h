@@ -53,13 +53,13 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
     }
 
     void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
-        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             vec3<double> EyCoord = gridParams.getCoord(ind, E, y);
             double tE = gridParams.shiftT[E] * dt;
             return vec3<double>(0, f(EyCoord.x, EyCoord.z, tE), 0);
         };
 
-        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             vec3<double> BxCoord = gridParams.getCoord(ind, B, x);
             vec3<double> BzCoord = gridParams.getCoord(ind, B, z);
             double tB = gridParams.shiftT[B] * dt;
@@ -67,7 +67,7 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
                 cos(angle)*f(BxCoord.x, BzCoord.x, tB));
         };
 
-        fJ = [](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fJ = [](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             return vec3<>(0);
         };
     }

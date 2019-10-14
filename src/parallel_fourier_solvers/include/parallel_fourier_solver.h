@@ -1,4 +1,5 @@
 #pragma once
+#include "mpi_worker.h"
 #include <memory>
 #include <functional>
 #include "grid3d.h"
@@ -8,7 +9,6 @@
 #include "filter.h"
 #include "vector3d.h"
 #include "status.h"
-#include "mpi_worker.h"
 #include "parallel_scheme.h"
 #include "file_writer.h"
 #include "field_solver.h"

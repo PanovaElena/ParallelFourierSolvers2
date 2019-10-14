@@ -59,15 +59,15 @@ if (USE_OMP)
                 set(MKL_LIBRARIES ${MKL_LIBRARIES} ${IOMP5})
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
             elseif(UNIX)
-                set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -liomp5 -lpthread -lm -ldl")
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
+                set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -liomp5 -lpthread -lm -ldl)
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
             endif()
         endif()
         
         # GCC
         if (${CMAKE_CXX_COMPILER} MATCHES "gcc.*$")
-            set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lgomp -lpthread -lm -ldl")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
+            set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lgomp -lpthread -lm -ldl)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         endif()
         
         # MSVC
@@ -115,7 +115,7 @@ else()  # USE_OMP
                 
         if (UNIX)
             set(MKL_LIBRARIES "-Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group -lpthread -lm -ldl")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         elseif(WIN32)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DMKL_ILP64")
         endif()

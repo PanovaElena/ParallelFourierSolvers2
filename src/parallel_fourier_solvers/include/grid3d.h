@@ -26,9 +26,9 @@ struct FieldForGrid : public vec3<Array3d<T>> {
         this->z.clear();
     }
     void initialize(vec3<int> _n) {
-        this->x.initialize({ _n.x, _n.y, _n.z });
-        this->y.initialize({ _n.x, _n.y, _n.z });
-        this->z.initialize({ _n.x, _n.y, _n.z });
+        this->x.initialize(_n);
+        this->y.initialize(_n);
+        this->z.initialize(_n);
     }
     friend bool operator==(const FieldForGrid& f1, const FieldForGrid& f2) {
         return (f1.x == f2.x && f1.y == f2.y && f1.z == f2.z);

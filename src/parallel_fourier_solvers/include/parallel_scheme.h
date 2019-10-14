@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "vector3d.h"
 #include "status.h"

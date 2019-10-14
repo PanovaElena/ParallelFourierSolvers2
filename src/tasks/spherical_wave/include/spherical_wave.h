@@ -49,15 +49,15 @@ struct ParametersForSphericalWave : public ParallelTaskParameters {
     }
 
     void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
-        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             return vec3<>(0);
         };
 
-        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fB = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             return vec3<>(0);
         };
 
-        fJ = [this](vec3<int> ind, int iter, const GridParams& gridParams) {
+        fJ = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             vec3<> coord = gridParams.getCoord(ind, J, z);
             double t = gridParams.getTime(iter, dt, source.startTime, J);
             return vec3<>(0, 0, source.getJ(coord, t));
