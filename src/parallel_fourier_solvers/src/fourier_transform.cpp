@@ -7,6 +7,10 @@
 #include "array3d.h"
 #include "class_member_ptr.h"
 
+#ifdef __USE_GLOBAL_FFT__
+#include "fftw3-mpi.h"
+#endif __USE_GLOBAL_FFT__
+
 void FourierTransformOfGrid::createPlans(Grid3d & grid)
 {
     int Nx = globalSize.x, Ny = globalSize.y, Nz = globalSize.z;

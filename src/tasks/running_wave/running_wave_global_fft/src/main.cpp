@@ -56,10 +56,9 @@ int main(int argc, char** argv) {
         vec3<int> localGridSize(localSizeX, params.gridParams.n.y,
             2 * (params.gridParams.n.z / 2 + 1));
         vec3<int> localGridStart(localStartX, 0, 0);
-        vec3<> aLocal(params.gridParams.a + (vec3<>)localGridStart*params.gridParams.d),
-            bLocal(aLocal + (vec3<>)localGridSize*params.gridParams.d);
+        vec3<> aLocal(params.gridParams.a + (vec3<>)localGridStart*params.gridParams.d);
         ParametersForRunningWave localParams(params);
-        localParams.gridParams.a = aLocal; localParams.gridParams.b = bLocal;
+        localParams.gridParams.a = aLocal;
         localParams.gridParams.n = localGridSize;
         file << "\n" << "RANK " << MPIWrapper::MPIRank() << "\n";
         file << localSizeX << " " << localStartX << " " << ret << "\n";
