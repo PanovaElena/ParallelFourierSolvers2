@@ -14,10 +14,10 @@ class TestRunningWaveJustParallel : public TestParallel {
 
 public:
     void setParamsForTest(ParametersForRunningWave p) {
-        task.setParamsForTest(p);
+        task.setParamsForTest(p, false);
     }
 
-    TestRunningWaveJustParallel() : task() {
+    TestRunningWaveJustParallel() : task(false) {
         setNameFiles();
     }
 

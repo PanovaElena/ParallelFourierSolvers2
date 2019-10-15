@@ -36,8 +36,6 @@ int main(int argc, char** argv) {
 
     Stat status = parser.parseArgsForParallel(argc, argv, params);
 
-    std::ofstream file("output_" + std::to_string((long long)(MPIWrapper::MPIRank()))+".txt");
-
     if (status == Stat::OK) {
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) params.print();
 
@@ -48,8 +46,7 @@ int main(int argc, char** argv) {
             &localSizeX, &localStartX);
         if (ret == 0) {
             if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
-                file << "ERROR: can't create descriptor" << std::endl;
-            file.close();
+                std::cout << "ERROR: can't create descriptor" << std::endl;
             MPIWrapper::MPIFinalize();
             return 0;
         }
@@ -60,9 +57,7 @@ int main(int argc, char** argv) {
         ParametersForRunningWave localParams(params);
         localParams.gridParams.a = aLocal;
         localParams.gridParams.n = localGridSize;
-        file << "\n" << "RANK " << MPIWrapper::MPIRank() << "\n";
-        file << localSizeX << " " << localStartX << " " << ret << "\n";
-        localParams.print(file);
+        std::cout << "\n" << "RANK " << MPIWrapper::MPIRank() << " " << localSizeX << " " << localStartX << " " << ret << "\n";
 
         FourierFieldSolver* fs = dynamic_cast<FourierFieldSolver*>(params.fieldSolver.get());
         if (!fs) return 0;
@@ -84,7 +79,7 @@ int main(int argc, char** argv) {
            // &local_n0, &local_0_start);
         // data = fftw_alloc_complex(alloc_local);
 
-        // file << alloc_local << " " << local_n0 << " " << local_0_start << std::endl;
+        // std::cout << alloc_local << " " << local_n0 << " " << local_0_start << std::endl;
 
         // /* create plan for in-place forward DFT */
         // plan = fftw_mpi_plan_dft_2d(N0, N1, data, data, MPI_COMM_WORLD,
@@ -99,18 +94,18 @@ int main(int argc, char** argv) {
            
         // for (int i = 0; i < local_n0; ++i){
            // for (int j = 0; j < N1; ++j)
-               // file<<"("<<data[i*N1 + j][0]<<" ,"<<data[i*N1 + j][1]<<");";
-           // file<<"\n";
+               // std::cout<<"("<<data[i*N1 + j][0]<<" ,"<<data[i*N1 + j][1]<<");";
+           // std::cout<<"\n";
         // }
-        // file<<"\n";
+        // std::cout<<"\n";
 
         // /* compute transforms, in-place, as many times as desired */
         // fftw_execute(plan);
         
         // for (int i = 0; i < local_n0; ++i){
            // for (int j = 0; j < N1; ++j)
-               // file<<"("<<data[i*N1 + j][0]<<" ,"<<data[i*N1 + j][1]<<");";
-           // file<<"\n";
+               // std::cout<<"("<<data[i*N1 + j][0]<<" ,"<<data[i*N1 + j][1]<<");";
+           // std::cout<<"\n";
         // }
 
         // fftw_destroy_plan(plan);
@@ -119,7 +114,6 @@ int main(int argc, char** argv) {
     else if (status == Stat::ERROR)
         std::cout << "There are some problems in args" << std::endl;
 
-    file.close();
     MPIWrapper::MPIFinalize();
     return 0;
 }

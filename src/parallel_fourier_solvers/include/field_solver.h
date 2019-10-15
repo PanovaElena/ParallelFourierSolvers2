@@ -107,6 +107,8 @@ protected:
 
 class FourierFieldSolver : public FieldSolver {
     std::unique_ptr<FourierTransformOfGrid> fourierTransform;
+    bool ifMpi = false;
+    vec3<int> globalSize;
 
 public:
     FourierFieldSolver() {
@@ -122,11 +124,14 @@ public:
 
     void initialize(Grid3d& grid) override {
         FieldSolver::initialize(grid);
-        fourierTransform.reset(new FourierTransformOfGrid(grid));
+        if (!ifMpi)
+             fourierTransform.reset(new FourierTransformOfGrid(grid));
+        else fourierTransform.reset(new FourierMpiTransformOfGrid(grid, globalSize));
     }
 
     void setGlobalFourierTransform(vec3<int> globalSize) {
-        fourierTransform.reset(new FourierMpiTransformOfGrid(*grid, globalSize));
+        ifMpi = true;
+        this->globalSize = globalSize;
     }
 
     static vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
