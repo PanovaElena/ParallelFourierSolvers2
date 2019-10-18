@@ -49,6 +49,7 @@ void FourierTransformOfGrid::makeFFT(Array3d<double>& arr1, Array3d<MyComplex>& 
         break;
     default:
         fftw_execute(plan);
+#pragma omp parallel for
         for (int i = 0; i < arr1.size1d(); i++)
             arr1[i] /= N.x * N.y * N.z;
         break;
