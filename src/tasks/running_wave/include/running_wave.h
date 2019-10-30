@@ -64,7 +64,7 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
             vec3<double> BzCoord = gridParams.getCoord(ind, B, z);
             double tB = gridParams.shiftT[B] * dt;
             return vec3<double>(-sin(angle)*f(BxCoord.x, BxCoord.z, tB), 0,
-                cos(angle)*f(BxCoord.x, BzCoord.x, tB));
+                cos(angle)*f(BzCoord.x, BzCoord.z, tB));
         };
 
         fJ = [](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
