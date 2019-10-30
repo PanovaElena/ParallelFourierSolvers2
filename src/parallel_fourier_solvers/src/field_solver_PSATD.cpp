@@ -1,5 +1,6 @@
 #include "field_solver.h"
 
+
 __forceinline void compField(Grid3d* grid, int i, int j, int k, vec3<MyComplex>& K, double normK,
     const vec3<MyComplex>& El, const vec3<MyComplex>& Jl, double dt) {
 
@@ -15,6 +16,7 @@ __forceinline void compField(Grid3d* grid, int i, int j, int k, vec3<MyComplex>&
     grid->BF.write(i, j, k, C * B - MyComplex::i() * S * vec3<MyComplex>::cross(K, E) +
         MyComplex::i() * ((1 - C) / (normK*constants::c))*vec3<MyComplex>::cross(K, J));
 }
+
 
 void FieldSolverPSATD::operator()(double dt)
 {
@@ -74,7 +76,7 @@ void FieldSolverPSATD::operator()(double dt)
 
 //void FieldSolverPSATD::operator()(double dt)
 //{
-//#pragma omp parallel for
+////#pragma omp parallel for
 //    for (int i = 0; i < grid->sizeComplex().x; i++)
 //        for (int j = 0; j < grid->sizeComplex().y; j++)
 //            for (int k = 0; k < grid->sizeComplex().z; k++) {
