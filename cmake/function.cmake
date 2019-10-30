@@ -60,6 +60,7 @@ function( create_executable TARGET)
         ${MPI_CXX_INCLUDE_DIRS})
     
     get_property( MY_LIBS GLOBAL PROPERTY MY_LIBRARIES )
+	#string(STRIP ${FFT_LIBRARIES} FFT_LIBRARIES)
     target_link_libraries( ${TARGET}
         ${MY_LIBS}
         ${FFT_LIBRARIES}
