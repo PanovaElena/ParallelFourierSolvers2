@@ -11,13 +11,13 @@ bx = 256
 ay = 0
 by = 1
 az = 0
-bz = 256
+bz = 256 * 128
 
 # grid
 
 nx = 256
 ny = 1
-nz = 256
+nz = 256 * 128
 
 dx = (bx-ax)/nx
 dy = (by-ay)/ny
@@ -34,8 +34,8 @@ solver = "PSATD"
 
 # parameters of wave
 
-lambd = 16 * dx    # length of wave
-angle = 0          # angle between OX and direction of movement of the wave
+lambd = 64 * dx    # length of wave
+angle = 0          # angle between OX and direction of movement of the wave (grad)
 
 # output
 
@@ -43,7 +43,7 @@ dimension_of_output_data = 1   # 1 (OX) or 2 (XOZ)
 
 # number of iterations for sequention launch
 
-n_iter = 10
+n_iter = 10 #32
 
 
 # parameters for parallel launch
