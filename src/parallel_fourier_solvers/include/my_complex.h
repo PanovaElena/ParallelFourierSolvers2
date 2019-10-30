@@ -3,9 +3,10 @@
 #include <iostream>
 
 class MyComplex {
+public:
     double real;
     double imag;
-public:
+
     MyComplex() {
         real = 0;
         imag = 0;

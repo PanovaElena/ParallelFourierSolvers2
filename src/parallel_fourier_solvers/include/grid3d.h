@@ -43,7 +43,14 @@ class Grid3d
 private:
     GridParams gridParams;
 
-    void clearGrid();
+    void clearGrid() {
+        E.clear();
+        B.clear();
+        J.clear();
+        EF.clear();
+        BF.clear();
+        JF.clear();
+    }
 
     Type state = Double;  // if grid complex or real
 
@@ -56,10 +63,16 @@ public:
     FieldForGrid<MyComplex> JF;
 
 public:
-    Grid3d();
-    Grid3d(const Grid3d& gr);
-    Grid3d(const GridParams& params);
-    ~Grid3d();
+    Grid3d() :E(), B(), J(), EF(), BF(), JF() {}
+    Grid3d(const Grid3d& gr) {
+        initialize(gr.gridParams);
+    }
+    Grid3d(const GridParams& params) {
+        initialize(gridParams);
+    }
+    ~Grid3d() {
+        clearGrid();
+    }
 
     //сравнение только по вещественным полям
     int operator==(const Grid3d& grid2);
@@ -67,18 +80,33 @@ public:
         return !(*this == grid2);
     }
 
-    Grid3d& operator=(const Grid3d& grid2);
+    Grid3d& operator=(const Grid3d& grid2) {
+        if (this != &grid2)
+            initialize(grid2.gridParams);
+        return *this;
+    }
 
     void initialize(const GridParams& params);
     void setFields();
     void setJ(int iter);
 
-    vec3<int> sizeReal() const;
-    vec3<int> sizeComplex() const;
+    vec3<int> sizeReal() const {
+        return gridParams.n;
+    }
+    vec3<int> sizeComplex() const {
+        return { gridParams.n.x, gridParams.n.y,
+            gridParams.n.z / 2 + 1 };
+    }
 
-    vec3<double> getStep() const;
-    vec3<double> getStart() const;
-    vec3<double> getEnd() const;
+    vec3<double> getStep() const {
+        return gridParams.d;
+    }
+    vec3<double> getStart() const {
+        return gridParams.a;
+    }
+    vec3<double> getEnd() const {
+        return gridParams.b();
+    }
 
     vec3<> getCoord(vec3<> node) {
         return gridParams.getCoord(node);

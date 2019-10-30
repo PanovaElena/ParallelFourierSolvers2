@@ -135,23 +135,23 @@ public:
     double getNorm() const
     {
         return sqrt(absSquare(x) + absSquare(y) + absSquare(z));
-    };
-    vec3 normilize() {
-        if (getNorm() == 0) return *this;
-        (*this) = (*this)*(1.0 / getNorm());
-        return *this;
-    };
+    }
+
+    void normilize() {
+        (*this) = (*this) * (1.0/sqrt(absSquare(x) + absSquare(y) + absSquare(z)));
+    }
 
     static T dot(const vec3& a, const vec3& b) {
         return (a.x * b.x + a.y * b.y + a.z * b.z);
-    };
+    }
+
     static vec3 cross(const vec3& a, const vec3& b) {
         T c1, c2, c3;
         c1 = a.y * b.z - a.z * b.y;
         c2 = a.z * b.x - a.x * b.z;
         c3 = a.x * b.y - a.y * b.x;
         return vec3(c1, c2, c3);
-    };
+    }
 
     friend std::ostream& operator<<(std::ostream& ost, const vec3<T>& vec) {
         ost << "(" << vec.x << "," << vec.y << "," << vec.z << ")";;
