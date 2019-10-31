@@ -25,15 +25,17 @@ struct ParametersForSphericalWave : public ParallelTaskParameters {
 
     void setDefaultValues() {
         ParallelTaskParameters::setDefaultValues();
+
         vec3<int> n(64, 64, 1);
         vec3<>  d(constants::c), a(-1 * (vec3<>)(n / 2) * d);
-        GridParams::FieldFunc fE, fB, fJ;
-        setFieldFuncs(fE, fB, fJ);
-        gridParams.initialize(a, d, n, fE, fB, fJ,
-            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+
+        gridParams.initialize(a, d, n);
+        gridParams.setShifts(fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+
+        dt = 0.1;  // < COURANT_CONDITION_PSTD
 
         guard = vec3<int>(16, 16, 0);
-        dt = 0.1;  // < COURANT_CONDITION_PSTD
+
         nSeqSteps = 300;
         nParSteps = 100;
         nDomainSteps = (int)(0.4*guard.x*d.x / constants::c / dt);
@@ -46,6 +48,10 @@ struct ParametersForSphericalWave : public ParallelTaskParameters {
         source.startTime = 0;
 
         fileWriter.initialize("./", E, z, Section(Section::XOY, Section::center));
+
+        GridParams::FieldFunc fE, fB, fJ;
+        setFieldFuncs(fE, fB, fJ);
+        gridParams.setFieldFuncs(fE, fB, fJ);
     }
 
     void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
@@ -81,14 +87,15 @@ class SphericalWave {
 public:
 
     ParametersForSphericalWave params;
+    bool commonGrid = true;
 
     Grid3d grid;
 
     SphericalWave(bool commonGrid = true) : params() {
-        if (commonGrid) initialize();
+        this->commonGrid = commonGrid;
     }
 
-    void setParamsForTest(const ParametersForSphericalWave& p, bool commonGrid = true) {
+    void setParamsForTest(const ParametersForSphericalWave& p) {
         params = p;
         if (commonGrid) initialize();
     }

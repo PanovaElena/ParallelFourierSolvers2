@@ -28,23 +28,31 @@ struct ParametersForRunningWave : public ParallelTaskParameters {
 
     void setDefaultValues() {
         ParallelTaskParameters::setDefaultValues();
+
         vec3<int> n(64, 1, 64);
         vec3<> a(0), d(1);
-        GridParams::FieldFunc fE, fB, fJ;
-        setFieldFuncs(fE, fB, fJ);
-        gridParams.initialize(a, d, n, fE, fB, fJ,
-            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+
+        gridParams.initialize(a, d, n);
+        gridParams.setShifts(fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+
+        dt = 1.0 / (constants::c * 4);  // < COURANT_CONDITION_PSTD
+
+        angle = 0;
+        lambda = 16 * d.x;
 
         guard = vec3<int>(16, 0, 16);
-        dt = 1.0 / (constants::c * 4);  // < COURANT_CONDITION_PSTD
+
         nSeqSteps = 200;
         nParSteps = 600;
         nDomainSteps = (int)(0.4*guard.x*d.x / constants::c / dt);
-        lambda = 16 * d.x;
-        angle = 0;
+
         dimensionOfOutputData = 1;
 
         fileWriter.initialize("./", E, y, Section(Section::XOY, Section::center, Section::XOZ, Section::center));
+
+        GridParams::FieldFunc fE, fB, fJ;
+        setFieldFuncs(fE, fB, fJ);
+        gridParams.setFieldFuncs(fE, fB, fJ);
     }
 
     double f(double x, double z, double t) const {
@@ -87,14 +95,15 @@ class RunningWave {
 public:
 
     ParametersForRunningWave params;
+    bool commonGrid = true;
 
     Grid3d grid;
 
-    RunningWave(bool commonGrid = true): params() {
-        if (commonGrid) initialize();
+    RunningWave(bool commonGrid = true) {
+        this->commonGrid = commonGrid;
     }
 
-    void setParamsForTest(const ParametersForRunningWave& p, bool commonGrid = true) {
+    void setParamsForTest(const ParametersForRunningWave& p) {
         params = p;
         if (params.dimensionOfOutputData == 2)
             params.fileWriter.setSection(Section(Section::XOZ, Section::center));

@@ -14,7 +14,7 @@ class TestRunningWaveParallel : public TestParallel {
 
 public:
     void setParamsForTest(const ParametersForRunningWave& p) {
-        task.setParamsForTest(p);
+        task.setParamsForTest(p); 
     }
 
     TestRunningWaveParallel() : task() {
@@ -34,7 +34,7 @@ public:
         }
         task.params.fieldSolver->doFourierTransform(CtoR);
 
-        std::cout << "sequential part done\n";
+        //std::cout << "sequential part done\n";
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
             task.params.fileWriter.write(task.grid, nameFileFirstSteps);
     }
@@ -55,9 +55,9 @@ public:
             return Stat::ERROR;
 
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
-            task.params.fieldSolver->doFourierTransform(RtoC);
+            parallelSolver.getFieldSolver().doFourierTransform(RtoC);
             fw.write(parallelSolver.getGrid(), "spectrum_after_div.csv", Complex);
-            task.params.fieldSolver->doFourierTransform(CtoR);
+            parallelSolver.getFieldSolver().doFourierTransform(CtoR);
         }
 
         //std::cout << "parallel field solver\n";
