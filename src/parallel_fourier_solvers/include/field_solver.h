@@ -17,15 +17,23 @@ protected:
     virtual void operator() (double dt) = 0;
 
 public:
-    FieldSolver() {}
+    FieldSolver() {
+        setShifts();
+    }
     FieldSolver(Grid3d& grid) {
         initialize(grid);
+    }
+    FieldSolver(const FieldSolver& fs) {
+        this->grid = fs.grid;
+        this->shiftSp = fs.shiftSp;
+        this->shiftT = fs.shiftT;
     }
 
     virtual FieldSolver* clone() const = 0;
 
     virtual void initialize(Grid3d& grid) {
         this->grid = &grid;
+        setShifts();
     }
 
     void run(double dt) {
@@ -54,6 +62,15 @@ public:
         return shiftT;
     }
 
+    virtual void setShifts() {
+        shiftT[E] = 0.0;
+        shiftT[B] = 0.0;
+        shiftT[J] = 0.0;
+        shiftSp[E] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
+        shiftSp[B] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
+        shiftSp[J] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
+    };
+
     virtual std::string to_string() = 0;
 
     vec3<> shiftT;
@@ -74,24 +91,32 @@ public:
 
 class FieldSolverFDTD: public RealFieldSolver {
 public:
-    FieldSolverFDTD() {}
-
+    FieldSolverFDTD() {
+        setShifts();
+    }
     FieldSolverFDTD(Grid3d& grid){
         initialize(grid);
+    }
+    FieldSolverFDTD(const FieldSolverFDTD& fs) : RealFieldSolver(fs) {
+        setShifts();
     }
 
     FieldSolver* clone() const override {
         return new FieldSolverFDTD(*this);
     }
 
-    void initialize(Grid3d& grid) override {
+    void setShifts() override {
         shiftT[E] = 0.5;
         shiftT[B] = -0.5;
         shiftT[J] = 0.0;
         shiftSp[E] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
         shiftSp[B] = vec3<vec3<>>(vec3<>(0, 0.5, 0.5), vec3<>(0.5, 0, 0.5), vec3<>(0.5, 0.5, 0));
         shiftSp[J] = vec3<vec3<>>(vec3<>(0.5, 0, 0), vec3<>(0, 0.5, 0), vec3<>(0, 0, 0.5));
+    }
+
+    void initialize(Grid3d& grid) override {
         RealFieldSolver::initialize(grid);
+        setShifts();
     }
 
     void operator() (double dt) override;
@@ -156,24 +181,32 @@ public:
 
 class FieldSolverPSATD : public FourierFieldSolver {
 public:
-    FieldSolverPSATD() {}
+    FieldSolverPSATD() {
+        setShifts();
+    }
     FieldSolverPSATD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
         initialize(grid);
     }
-    FieldSolverPSATD(const FieldSolverPSATD& fs) : FourierFieldSolver(fs) {}
+    FieldSolverPSATD(const FieldSolverPSATD& fs) : FourierFieldSolver(fs) {
+        setShifts();
+    }
 
     FieldSolver* clone() const override {
         return new FieldSolverPSATD(*this);
     }
 
-    void initialize(Grid3d& grid) override {
+    void setShifts() override {
         shiftT[E] = 0.0;
         shiftT[B] = 0.0;
         shiftT[J] = 0.5;
         shiftSp[E] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
         shiftSp[B] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
         shiftSp[J] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
+    }
+
+    void initialize(Grid3d& grid) override {
         FourierFieldSolver::initialize(grid);
+        setShifts();
     }
 
     std::string to_string() override {
@@ -186,24 +219,32 @@ protected:
 
 class FieldSolverPSTD : public FourierFieldSolver {
 public:
-    FieldSolverPSTD() {}
+    FieldSolverPSTD() {
+        setShifts();
+    }
     FieldSolverPSTD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
         initialize(grid);
     }
-    FieldSolverPSTD(const FieldSolverPSTD& fs) : FourierFieldSolver(fs) {}
+    FieldSolverPSTD(const FieldSolverPSTD& fs) : FourierFieldSolver(fs) {
+        setShifts();
+    }
 
     FieldSolver* clone() const override {
         return new FieldSolverPSTD(*this);
     }
 
-    void initialize(Grid3d& grid) override {
+    void setShifts() override {
         shiftT[E] = 0.0;
         shiftT[B] = 0.5;
         shiftT[J] = 0.5;
         shiftSp[E] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
         shiftSp[B] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
         shiftSp[J] = vec3<vec3<>>(vec3<>(0.0), vec3<>(0.0), vec3<>(0.0));
+    }
+
+    void initialize(Grid3d& grid) override {
         FourierFieldSolver::initialize(grid);
+        setShifts();
     }
 
     std::string to_string() override {

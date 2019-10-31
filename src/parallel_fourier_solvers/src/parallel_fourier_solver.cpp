@@ -180,11 +180,11 @@ void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double 
 void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
 {
     if (ifWrite)
-        fileWriter.write(localGrid, "1_iter_rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+        fileWriter.write(localGrid, "1__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_before_mask.csv", Double);
     mask->apply(localGrid);
     if (ifWrite)
-        fileWriter.write(localGrid, "2_iter_rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+        fileWriter.write(localGrid, "2__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_after_mask.csv", Double);
 
     fieldSolver->doFourierTransform(RtoC);
@@ -195,10 +195,10 @@ void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
     fieldSolver->doFourierTransform(CtoR);
 
     if (ifWrite)
-        fileWriter.write(localGrid, "3_iter_rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+        fileWriter.write(localGrid, "3__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_before_last_exc.csv", Double);
     mpiWorker.exchangeGuard();
     if (ifWrite)
-        fileWriter.write(localGrid, "4_iter_rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+        fileWriter.write(localGrid, "4__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_after_last_exc.csv", Double);
 }
