@@ -72,10 +72,6 @@ public:
         //std::cout << "assemble\n";
         parallelSolver.assembleResults(task.grid);
 
-        //std::cout << "writing to file assembled result\n";
-        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
-            task.params.fileWriter.write(task.grid, nameFileSecondSteps);
-
         if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
             task.params.fieldSolver->doFourierTransform(RtoC);
             fw.write(task.grid, "spectrum_before_filter.csv", Complex);
@@ -83,6 +79,10 @@ public:
             fw.write(task.grid, "spectrum_after_filter.csv", Complex);
             task.params.fieldSolver->doFourierTransform(CtoR);
         }
+
+        //std::cout << "writing to file assembled result\n";
+        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
+            task.params.fileWriter.write(task.grid, nameFileSecondSteps);
 
         return Stat::OK;
     }
