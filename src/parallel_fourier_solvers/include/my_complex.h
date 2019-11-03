@@ -99,4 +99,8 @@ public:
         return MyComplex(0, 1);
     }
 
+    MyComplex multi() {
+        return MyComplex(-imag, real);
+    }
+
 };
