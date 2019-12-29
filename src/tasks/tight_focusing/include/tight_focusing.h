@@ -33,40 +33,60 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     double exclusionRadius = 1e-5;
     double amp = sqrt(totalPower*4.0 / (constants::c*(1.0 - cos(openingAngle))));
 
+    double D = 2 * pulseLength;
+
+    std::string dir = "./";
+
     // computing
     int factor = 1;
     vec3<int> n_start;
+    vec3<int> n_start_strip;
     bool ifStrip = false;
     
     FileWriter fileWriterEx, fileWriterEy, fileWriterEz;
 
-    ParametersForTightFocusing(): n_start(320, 256, 256) {
+    ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
         setDefaultValues();
     }
+
+
+    void updateNotStrip() {
+        vec3<int> n = n_start * factor;
+        vec3<> a(-20e-4, -20e-4, -20e-4), b(20e-4, 20e-4, 20e-4);
+        vec3<> d = (b - a) / (vec3<>)n;
+        GridParams::FieldFunc fE, fB, fJ;
+        setFieldFuncsNotStrip(fE, fB, fJ);
+        gridParams.initialize(a, d, n, fE, fB, fJ,
+            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+    }
+
+    void updateStrip() {
+        vec3<int> n = n_start_strip * factor;
+        vec3<> a(-19e-4, -20e-4, -20e-4), b(-15e-4, 20e-4, 20e-4);
+        vec3<> d = (b - a) / (vec3<>)n;
+        GridParams::FieldFunc fE, fB, fJ;
+        setFieldFuncsStrip(fE, fB, fJ);
+        gridParams.initialize(a, d, n, fE, fB, fJ,
+            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+    }
+
 
     void setDefaultValues() {
         ParallelTaskParameters::setDefaultValues();
 
-        vec3<int> n = n_start * factor;
-        vec3<> a(-20e-4, -20e-4, -20e-4), b(20e-4, 20e-4, 20e-4);
-        // if (ifStrip)
-        vec3<> d = (b - a) / (vec3<>)n;
-        GridParams::FieldFunc fE, fB, fJ;
-        setFieldFuncs(fE, fB, fJ);
-        gridParams.initialize(a, d, n, fE, fB, fJ,
-            fieldSolver->getSpatialShift(), fieldSolver->getTimeShift());
+        updateNotStrip();
 
         dt = 0.2*wavelength /constants::c;
-        nSeqSteps = 180;
+        nSeqSteps = 10;//180;
         nParSteps = 0;
 
-        fileWriterEx.initialize("./", E, x, Section(Section::XOY, Section::center));
-        fileWriterEy.initialize("./", E, y, Section(Section::XOY, Section::center));
-        fileWriterEz.initialize("./", E, z, Section(Section::XOY, Section::center));
+        fileWriterEx.initialize(dir, E, x, Section(Section::XOY, Section::center));
+        fileWriterEy.initialize(dir, E, y, Section(Section::XOY, Section::center));
+        fileWriterEz.initialize(dir, E, z, Section(Section::XOY, Section::center));
     }
 
     double sign(double x) {
-        return (x >= 0);
+        return (x >= 0? 1.0: -1.0);
     }
 
     double block(double x, double xmin, double xmax) {
@@ -90,15 +110,16 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     }
 
     double mask(double x, double y, double z, double t = 0) {
-        double R = sqrt(x*x + y * y + z * z);
+        double R = sqrt(x * x + y * y + z * z);
         if (R > exclusionRadius) {
-            double angle = asin(sqrt(y*y + z * z) / R);
+            double angle = asin(sqrt(y * y + z * z) / R);
             return (amp / R)*longitudinalFieldVariation(R + constants::c*(t + timeFieldInit))*transverseShape(angle)*(x < 0);
         }
         return 0;
     }
 
-    void setFieldFuncs(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
+
+    void setFieldFuncsNotStrip(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
         fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             double x = gridParams.getCoord(ind, E, Coordinate::x).x,
                 y = gridParams.getCoord(ind, E, Coordinate::x).y,
@@ -126,6 +147,38 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
         };
     }
 
+
+    void setFieldFuncsStrip(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
+        GridParams::FieldFunc fE1, fB1;
+        setFieldFuncsNotStrip(fE1, fB1, fJ);
+
+        const int nPeriods = 5;
+
+        fE = [this, nPeriods, fE1](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
+            vec3<double> res(0, 0, 0);
+            double x = gridParams.getCoord(ind, E, Coordinate::x).x,
+                y = gridParams.getCoord(ind, E, Coordinate::x).y,
+                z = gridParams.getCoord(ind, E, Coordinate::x).z;
+            for (int i = 0; i < nPeriods; i++) {
+                res = res + fE1(gridParams.getNode(vec3<>(x + i * D, y, z), E, Coordinate::x), iter, gridParams);
+            }
+            return res;
+        };
+
+        fB = [this, nPeriods, fB1](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
+            vec3<double> res(0, 0, 0);
+            double x = gridParams.getCoord(ind, B, Coordinate::x).x,
+                y = gridParams.getCoord(ind, B, Coordinate::x).y,
+                z = gridParams.getCoord(ind, B, Coordinate::x).z;
+            for (int i = 0; i < nPeriods; i++) {
+                res = res + fB1(gridParams.getNode(vec3<>(x + i * D, y, z), B, Coordinate::x), iter, gridParams);
+            }
+            return res;
+        };
+    }
+
+
+
     void print(std::ostream& ost = std::cout) const {
         ParallelTaskParameters::print(ost);
     }
@@ -140,7 +193,6 @@ public:
     Grid3d grid;
 
     TightFocusing(): params() {
-        initialize();
     }
 
     void setParamsForTest(const ParametersForTightFocusing& p) {

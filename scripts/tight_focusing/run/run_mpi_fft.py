@@ -6,18 +6,17 @@ import graphics as gr
 import subprocess
 import os
 import shutil
-import args
 
-DIR_SCRIPT = "./"+os.path.dirname(sys.argv[0])
-if (sys.platform == "win32"):
-    MPI = "mpiexec"
-else: MPI = "mpirun"
+DIR_SCRIPT = os.path.abspath("./").replace("\\", "/")
+MPI = "mpirun"
 
-NUM_PROCESSES=10
+if (sys.argv[1] == "1"):
+    NUM_PROCESSES = 1
+else: NUM_PROCESSES = 10
 
 NAME_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/tight_focusing"+"\""
 
-DIR_RESULTS = "./results/"
+DIR_RESULTS = DIR_SCRIPT+"/results_%s/" % sys.argv[1]
 
 if (os.path.exists(DIR_RESULTS)): 
 	for (dirpath, dirnames, filenames) in os.walk(DIR_RESULTS):
@@ -27,16 +26,17 @@ else:
     os.mkdir(DIR_RESULTS)
 		
 command_args = \
-					"-solver "+str(args.solver)+" "+\
+					"-solver "+str("PSATD")+" "+\
 					\
-					"-nseqi "+str(args.n_iter)+" "+\
+					"-nseqi "+str(180)+" "+\
 					\
-					"-dir "+str(DIR_SCRIPT+DIR_RESULTS)+" "\
+					"-dir "+str(DIR_RESULTS)+" "\
 					\
-					"-factor "+str(args.factor)+" ";
+					"-factor "+str(4)+" "\
+                    "-strip "+str(sys.argv[1])+" ";
 					
 
-process = subprocess.Popen(MPI+" -np "+str(NUM_PROCESSES)+" -ppn 1 "+NAME_PROGRAM+" "+command_args, shell=True)
+process = subprocess.Popen(MPI + " -np " + str(NUM_PROCESSES) + " -ppn 1 " + NAME_PROGRAM + " " + command_args, shell=True)
 process.wait()
 
 	

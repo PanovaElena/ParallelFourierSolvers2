@@ -29,6 +29,7 @@ void Grid3d::initialize(const GridParams& gridParams) {
     this->gridParams = gridParams;
 
     vec3<int> n = gridParams.n;
+
     E.initialize(n);
     B.initialize(n);
     J.initialize(n);

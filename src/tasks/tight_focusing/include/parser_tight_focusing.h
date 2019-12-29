@@ -15,6 +15,7 @@ public:
 
         std::cout <<
             "-factor                     set factor, default value is " << p.factor << "\n" <<
+            "-strip                      set if strip, default value is " << p.ifStrip << "\n" <<
             std::endl;
     }
 
@@ -24,11 +25,23 @@ public:
 
         ParametersForTightFocusing& params = static_cast<ParametersForTightFocusing&>(p);
 
-        if (m.find("-factor") != m.end()) {
-            params.factor = std::stoi(m.find("-factor")->second);
-            params.gridParams.n = params.n_start * params.factor;
-            params.gridParams.d = (params.gridParams.b - params.gridParams.a) / (vec3<>)params.gridParams.n;
+        if (m.find("-strip") != m.end() && std::stoi(m.find("-strip")->second) == 1)
+            params.ifStrip = true;
+        else params.ifStrip = false;
+
+        if (m.find("-dir") != m.end()) {
+            params.dir = m.find("-dir")->second;
+            params.fileWriterEx.initialize(params.dir, E, x, Section(Section::XOY, Section::center));
+            params.fileWriterEy.initialize(params.dir, E, y, Section(Section::XOY, Section::center));
+            params.fileWriterEz.initialize(params.dir, E, z, Section(Section::XOY, Section::center));
         }
+
+        if (m.find("-factor") != m.end())
+            params.factor = std::stoi(m.find("-factor")->second);
+
+        if (params.ifStrip == false)
+            params.updateNotStrip();
+        else params.updateStrip();
 
         return Stat::OK;
     }
