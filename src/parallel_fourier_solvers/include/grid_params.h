@@ -29,13 +29,13 @@ public:
     }
 
     GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
+        const FieldFunc& fE, const FieldFunc& fB, const FieldFunc& fJ)
     {
         initialize(a, d, n, fE, fB, fJ);
     }
 
     GridParams(vec3<double> a, vec3<double> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ,
+        const FieldFunc& fE, const FieldFunc& fB, const FieldFunc& fJ,
         const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
     {
         initialize(a, d, n, fE, fB, fJ, shiftSp, shiftT);
@@ -53,21 +53,21 @@ public:
     }
 
     void initialize(vec3<> a, vec3<> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ)
+        const FieldFunc& fE, const FieldFunc& fB, const FieldFunc& fJ)
     {
         initialize(a, d, n);
         setFieldFuncs(fE, fB, fJ);
     }
 
     void initialize(vec3<> a, vec3<> d, vec3<int> n,
-        FieldFunc fE, FieldFunc fB, FieldFunc fJ,
+        const FieldFunc& fE, const FieldFunc& fB, const FieldFunc& fJ,
         const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT)
     {
         initialize(a, d, n, fE, fB, fJ);
         setShifts(shiftSp, shiftT);
     }
 
-    void setFieldFuncs(FieldFunc fE, FieldFunc fB, FieldFunc fJ) {
+    void setFieldFuncs(const FieldFunc& fE, const FieldFunc& fB, const FieldFunc& fJ) {
         this->funcE = fE;
         this->funcB = fB;
         this->funcJ = fJ;

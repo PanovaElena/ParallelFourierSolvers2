@@ -75,6 +75,10 @@ public:
         return localGrid;
     }
 
+    FieldSolver& getFieldSolver() {
+        return *fieldSolver;
+    }
+
     void writeFile(std::string fileName) {
         fileWriter.write(localGrid, fileName);
     }

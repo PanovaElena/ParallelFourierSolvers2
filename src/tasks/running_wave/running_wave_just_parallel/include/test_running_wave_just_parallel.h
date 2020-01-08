@@ -14,7 +14,7 @@ class TestRunningWaveJustParallel : public TestParallel {
 
 public:
     void setParamsForTest(ParametersForRunningWave p) {
-        task.setParamsForTest(p, false);
+        task.setParamsForTest(p);
     }
 
     TestRunningWaveJustParallel() : task(false) {

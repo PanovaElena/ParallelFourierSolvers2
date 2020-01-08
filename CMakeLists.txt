@@ -51,6 +51,15 @@ else()
 endif()
 
 
+if (${CMAKE_CXX_COMPILER} MATCHES "icc.*$" OR ${CMAKE_CXX_COMPILER} MATCHES "icl.*$")
+    if (WIN32)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qopt-report:5 -Qopt-report-phase:vec")
+    elseif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopt-report:5 -qopt-report-phase:vec")
+    endif()
+endif()
+
+
 if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     set(CMAKE_EXE_LINKER_FLAGS "/NODEFAULTLIB:libcmt.lib")
@@ -71,7 +80,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEAS
 # mpi
 if (WIN32)
     if (NOT MPI_CXX_LIBRARIES)
-        set(MPI_CXX_LIBRARIES "$ENV{I_MPI_ROOT}/intel64/lib/*.lib")
+        set(MPI_CXX_LIBRARIES "$ENV{I_MPI_ROOT}/intel64/lib/release/impi.lib")
     endif()  
     if (NOT MPI_CXX_INCLUDE_DIRS)
         set(MPI_CXX_INCLUDE_DIRS "$ENV{I_MPI_ROOT}/intel64/include")

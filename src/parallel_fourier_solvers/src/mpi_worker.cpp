@@ -20,6 +20,7 @@ Stat MPIWorker::initialize(std::shared_ptr<MPIWrapperGrid> mpiWrapper,
 
 void MPIWorker::exchangeGuard()
 {
+    mpiWrapper->MPIBarrier();
     exchangeTwoProcesses(Coordinate::x);
     mpiWrapper->MPIBarrier();
     exchangeTwoProcesses(Coordinate::y);
