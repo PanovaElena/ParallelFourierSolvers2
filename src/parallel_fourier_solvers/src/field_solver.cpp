@@ -9,29 +9,29 @@ void FieldSolverPSATD::operator()(double dt)
 #pragma omp parallel for
     for (int i = 0; i < grid->sizeComplex().x; i++)
         for (int j = 0; j < grid->sizeComplex().y; j++)
-            for (int k = 0; k < grid->sizeComplex().z; k++) {
+			for (int k = 0; k < grid->sizeComplex().z; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->getStep());
-                double normK = K.getNorm();
-                K = K.normilize();
+				vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->getStep());
+				double normK = K.getNorm();
+				K = K.normilize();
 
-                double C = cos(normK*constants::c*dt);
-                double S = sin(normK*constants::c*dt);
-                vec3<MyComplex> E = grid->EF(i, j, k), B = grid->BF(i, j, k),
-                    J = 4 * constants::pi * grid->JF(i, j, k);
-                vec3<MyComplex> Jl = K * vec3<MyComplex>::dot(K, J);
-                vec3<MyComplex> El = K * vec3<MyComplex>::dot(K, E);
+				double C = cos(normK*constants::c*dt);
+				double S = sin(normK*constants::c*dt);
+				vec3<MyComplex> E = grid->EF(i, j, k), B = grid->BF(i, j, k),
+					J = 4 * constants::pi * grid->JF(i, j, k);
+				vec3<MyComplex> Jl = K * vec3<MyComplex>::dot(K, J);
+				vec3<MyComplex> El = vec3<MyComplex>(MyComplex(0.0), MyComplex(0.0), MyComplex(0.0));// K * vec3<MyComplex>::dot(K, E);
 
-                if (normK == 0) {
-                    grid->EF.write(i, j, k, E - J);
-                    continue;
-                }
+				if (normK == 0) {
+					grid->EF.write(i, j, k, E - J);
+					continue;
+				}
 
-                grid->EF.write(i, j, k, C*E + MyComplex::i() * S*vec3<MyComplex>::cross(K, B) -
-                    S / (normK*constants::c)*J + (1 - C)*El + Jl * (S / (normK*constants::c) - dt));
-                grid->BF.write(i, j, k, C*B - MyComplex::i() * S*vec3<MyComplex>::cross(K, E) +
-                    MyComplex::i() * ((1 - C) / (normK*constants::c))*vec3<MyComplex>::cross(K, J));
-            }
+				grid->EF.write(i, j, k, C*E + MyComplex::i() * S*vec3<MyComplex>::cross(K, B) -
+					S / (normK*constants::c)*J + (1 - C)*El + Jl * (S / (normK*constants::c) - dt));
+				grid->BF.write(i, j, k, C*B - MyComplex::i() * S*vec3<MyComplex>::cross(K, E) +
+					MyComplex::i() * ((1 - C) / (normK*constants::c))*vec3<MyComplex>::cross(K, J));
+			}
 }
 
 

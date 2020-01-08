@@ -45,14 +45,9 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     
     FileWriter fileWriterEx, fileWriterEy, fileWriterEz;
 
-    /*ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
+    ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
         setDefaultValues();
-    }*/
-
-	ParametersForTightFocusing() : n_start(160, 128, 128), n_start_strip(16, 128, 128) {
-		setDefaultValues();
-	}
-
+    }
 
     void updateNotStrip() {
         vec3<int> n = n_start * factor;

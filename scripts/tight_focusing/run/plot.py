@@ -13,16 +13,16 @@ import args
 
 
 if (args.STRIP == 0):
-    Nx = 160
+    Nx = 320
     coordXMin = -20e-4
     coordXMax = 20e-4
 else:
-    Nx = 16
+    Nx = 32
     coordXMin = -19e-4
     coordXMax = -15e-4
     args.NUM_PROCESSES = 1
 
-Ny = 128
+Ny = 256
 
 DIR_PICTURES = "./pictures_%s/" % str(args.STRIP)
 DIR_RESULTS = "./results_%s/" % str(args.STRIP)
