@@ -17,8 +17,9 @@ public:
         initialize(grid, grid.sizeReal());
     }
 
-	void initialize(Grid3d& grid, const vec3<int> globalSize) {
+	void initialize(Grid3d& grid, const vec3<int> globalSize, int localStartX = 0) {
 		this->globalSize = globalSize;
+		this->localStartX = localStartX;
 		createPlans(grid);
 		grid.setFields();
 	}
@@ -30,11 +31,17 @@ public:
         return new FourierTransformOfGrid(*this);
     }
 
+	vec3<int> getGlobalIndex(const vec3<int>& ind) {
+		return vec3<int>(ind.x + localStartX, ind.y, ind.z);
+	}
+
 protected:
     virtual void createPlans(Grid3d& grid);
     void destroyPlans();
     void makeFFT(Array3d<double>& arr1, Array3d<MyComplex>& arr2, vec3<int> N,
         Direction dir, fftw_plan& plan);
+
+	int localStartX = 0;
 };
 
 
@@ -42,8 +49,8 @@ class FourierMpiTransformOfGrid : public FourierTransformOfGrid {
 public:
     FourierMpiTransformOfGrid() {}
 
-    FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int> globalSize): FourierTransformOfGrid() {
-        this->initialize(grid, globalSize);
+    FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int>& globalSize, int localStartX): FourierTransformOfGrid() {
+        this->initialize(grid, globalSize, localStartX);
     }
 
     FourierTransformOfGrid* clone() const override {

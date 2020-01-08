@@ -11,7 +11,7 @@ void FieldSolverPSATD::operator()(double dt)
         for (int j = 0; j < grid->sizeComplex().y; j++)
             for (int k = 0; k < grid->sizeComplex().z; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), *grid);
+                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->getStep());
                 double normK = K.getNorm();
                 K = K.normilize();
 
@@ -41,7 +41,7 @@ void FieldSolverPSTD::refreshE(double dt) {
         for (int j = 0; j < grid->sizeComplex().y; j++)
             for (int k = 0; k < grid->sizeComplex().z; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), *grid);
+                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->getStep());
 
                 grid->EF.write(i, j, k, grid->EF(i, j, k) + MyComplex::i() * constants::c*dt*
                     vec3<MyComplex>::cross(K, grid->BF(i, j, k)) - 4 * constants::pi * grid->JF(i, j, k) * dt);
@@ -54,7 +54,7 @@ void FieldSolverPSTD::refreshB(double dt) {
         for (int j = 0; j < grid->sizeComplex().y; j++)
             for (int k = 0; k < grid->sizeComplex().z; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), *grid);
+                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->getStep());
 
                 grid->BF.write(i, j, k, grid->BF(i, j, k) - MyComplex::i() * constants::c*dt*
                     vec3<MyComplex>::cross(K, grid->EF(i, j, k)));

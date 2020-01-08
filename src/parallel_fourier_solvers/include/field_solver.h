@@ -141,12 +141,14 @@ protected:
     std::unique_ptr<FourierTransformOfGrid> fourierTransform;
     bool ifMpi = false;
     vec3<int> globalSize;
+	int localStartX;
 
 public:
     FourierFieldSolver() {
         this->fourierTransform.reset(new FourierTransformOfGrid());
     }
     FourierFieldSolver(Grid3d& grid) {
+		globalSize = grid.sizeReal();
         initialize(grid);
     }
     FourierFieldSolver(const FourierFieldSolver& fs) {
@@ -154,6 +156,7 @@ public:
         this->fourierTransform.reset(fs.fourierTransform->clone());
 		this->globalSize = fs.globalSize;
 		this->ifMpi = fs.ifMpi;
+		this->localStartX = fs.localStartX;
     }
 
 	bool getIfMpiFFT() override {
@@ -162,23 +165,29 @@ public:
 
     void initialize(Grid3d& grid) override {
         FieldSolver::initialize(grid);
-        if (!ifMpi)
-             fourierTransform.reset(new FourierTransformOfGrid(grid));
-        else fourierTransform.reset(new FourierMpiTransformOfGrid(grid, globalSize));
+        if (!ifMpi) {
+			globalSize = grid.sizeReal();
+			fourierTransform.reset(new FourierTransformOfGrid(grid));
+		}
+		else {
+			fourierTransform.reset(new FourierMpiTransformOfGrid(grid, globalSize, localStartX));
+		}
     }
 
-    void setGlobalFourierTransform(vec3<int> globalSize) {
+    void setGlobalFourierTransform(vec3<int> globalSize, int localStartX) {
         ifMpi = true;
         this->globalSize = globalSize;
+		this->localStartX = localStartX;
     }
 
-    static vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
-        MyComplex v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
-            (gr.getEnd().x - gr.getStart().x);
-        MyComplex v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /
-            (gr.getEnd().y - gr.getStart().y);
-        MyComplex v3 = (2 * constants::pi*((ind.z <= gr.sizeReal().z / 2) ? ind.z : ind.z - gr.sizeReal().z)) /
-            (gr.getEnd().z - gr.getStart().z);
+    vec3<MyComplex> getFreqVector(vec3<int> index, vec3<> d) {
+		vec3<int> ind = fourierTransform->getGlobalIndex(index);
+        MyComplex v1 = 2 * constants::pi / (d.x * globalSize.x) *
+			((ind.x <= globalSize.x / 2) ? ind.x : ind.x - globalSize.x);
+        MyComplex v2 = 2 * constants::pi / (d.y * globalSize.y) *
+			((ind.y <= globalSize.y / 2) ? ind.y : ind.y - globalSize.y);
+        MyComplex v3 = 2 * constants::pi / (d.z * globalSize.z) *
+			((ind.z <= globalSize.z / 2) ? ind.z : ind.z - globalSize.z);
         return vec3<MyComplex>(v1, v2, v3);
     }
 
@@ -192,7 +201,7 @@ public:
     FieldSolverPSATD() {
         setShifts();
     }
-    FieldSolverPSATD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+    FieldSolverPSATD(Grid3d& grid) {
         initialize(grid);
     }
     FieldSolverPSATD(const FieldSolverPSATD& fs) : FourierFieldSolver(fs) {
@@ -230,7 +239,7 @@ public:
     FieldSolverPSTD() {
         setShifts();
     }
-    FieldSolverPSTD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+    FieldSolverPSTD(Grid3d& grid) {
         initialize(grid);
     }
     FieldSolverPSTD(const FieldSolverPSTD& fs) : FourierFieldSolver(fs) {
