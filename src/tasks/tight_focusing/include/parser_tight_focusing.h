@@ -16,6 +16,7 @@ public:
         std::cout <<
             "-factor                     set factor, default value is " << p.factor << "\n" <<
             "-strip                      set if strip, default value is " << p.ifStrip << "\n" <<
+			"-dtm                        set dt=dtm*lambda/c, default value is " << p.dt/(p.wavelength/constants::c) << "\n" <<
             std::endl;
     }
 
@@ -35,6 +36,9 @@ public:
             params.fileWriterEy.initialize(params.dir, E, y, Section(Section::XOY, Section::center));
             params.fileWriterEz.initialize(params.dir, E, z, Section(Section::XOY, Section::center));
         }
+
+		if (m.find("-dtm") != m.end())
+			params.dt = std::stod(m.find("-dtm")->second)*params.wavelength/constants::c;
 
         if (m.find("-factor") != m.end())
             params.factor = std::stoi(m.find("-factor")->second);

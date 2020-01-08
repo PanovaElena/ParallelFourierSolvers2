@@ -136,6 +136,7 @@ public:
     {
         return sqrt(absSquare(x) + absSquare(y) + absSquare(z));
     };
+
     vec3 normilize() {
         if (getNorm() == 0) return *this;
         (*this) = (*this)*(1.0 / getNorm());
@@ -145,6 +146,7 @@ public:
     static T dot(const vec3& a, const vec3& b) {
         return (a.x * b.x + a.y * b.y + a.z * b.z);
     };
+
     static vec3 cross(const vec3& a, const vec3& b) {
         T c1, c2, c3;
         c1 = a.y * b.z - a.z * b.y;
@@ -158,10 +160,10 @@ public:
         return ost;
     }
 
-    friend std::string to_string(const vec3<T>& vec) {
-        std::string str = "(" + std::to_string((long long)vec.x) + "," +
-            std::to_string((long long)vec.y) + "," +
-            std::to_string((long long)vec.z) + ")";
+    std::string to_string() {
+        std::string str = "(" + std::to_string((long long)x) + "," +
+            std::to_string((long long)y) + "," +
+            std::to_string((long long)z) + ")";
         return str;
     }
 

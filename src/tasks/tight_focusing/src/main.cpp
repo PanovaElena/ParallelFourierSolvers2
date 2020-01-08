@@ -20,19 +20,19 @@ void testBody(TightFocusing& tightFocusing) {
     p.fileWriterEz.write(tightFocusing.grid, "global_fft_result_Ez_rank_" +
         std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(0)) + ".csv", Double);
 
-    for (int j = 0; j < p.nSeqSteps; j++) {
+    //for (int j = 0; j < p.nSeqSteps; j++) {
 
-        p.fieldSolver->doFourierTransform(RtoC);
-        p.fieldSolver->run(p.dt);
-        p.fieldSolver->doFourierTransform(CtoR);
+    //    p.fieldSolver->doFourierTransform(RtoC);
+    //    //p.fieldSolver->run(p.dt);
+    //    p.fieldSolver->doFourierTransform(CtoR);
 
-        p.fileWriterEx.write(tightFocusing.grid, "global_fft_result_Ex_rank_" +
-            std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
-        p.fileWriterEy.write(tightFocusing.grid, "global_fft_result_Ey_rank_" +
-            std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
-        p.fileWriterEz.write(tightFocusing.grid, "global_fft_result_Ez_rank_" +
-            std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
-    }
+    //    p.fileWriterEx.write(tightFocusing.grid, "global_fft_result_Ex_rank_" +
+    //        std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
+    //    p.fileWriterEy.write(tightFocusing.grid, "global_fft_result_Ey_rank_" +
+    //        std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
+    //    p.fileWriterEz.write(tightFocusing.grid, "global_fft_result_Ez_rank_" +
+    //        std::to_string((long long)(MPIWrapper::MPIRank())) + "_iter_" + std::to_string((long long)(j+1)) + ".csv", Double);
+    //}
 
     //double t2 = omp_get_wtime();
     //std::cout << MPIWrapper::MPIRank() << ": Time of mpi fft version is" << t2 - t1 << std::endl;
@@ -62,22 +62,20 @@ int main(int argc, char** argv) {
             MPIWrapper::MPIFinalize();
             return 0;
         }
-        vec3<int> localGridSize(localSizeX, params.gridParams.n.y,
-            2 * (params.gridParams.n.z / 2 + 1));
+        vec3<int> localGridSize(localSizeX, params.gridParams.n.y, params.gridParams.n.z);
         vec3<int> localGridStart(localStartX, 0, 0);
-        vec3<> aLocal(params.gridParams.a + (vec3<>)localGridStart*params.gridParams.d);
+        vec3<> aLocal(params.gridParams.a + (vec3<>)localGridStart * params.gridParams.d);
         ParametersForTightFocusing localParams(params);
         localParams.gridParams.a = aLocal;
         localParams.gridParams.n = localGridSize;
         std::cout << "\n" << "RANK " << MPIWrapper::MPIRank() << " " << localSizeX << " " << localStartX << " " << ret << "\n";
-
-        FourierFieldSolver* fs = dynamic_cast<FourierFieldSolver*>(params.fieldSolver.get());
+        
+		FourierFieldSolver* fs = dynamic_cast<FourierFieldSolver*>(localParams.fieldSolver.get());
         if (!fs) return 0;
-        fs->setGlobalFourierTransform(params.gridParams.n);
+        //fs->setGlobalFourierTransform(params.gridParams.n);
 
         TightFocusing tightFocusing;
         tightFocusing.setParamsForTest(localParams);  // + setting start conditions
-        //tightFocusing.setParamsForTest(params);  // + setting start conditions
 
         testBody(tightFocusing);
 

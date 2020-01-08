@@ -45,9 +45,13 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     
     FileWriter fileWriterEx, fileWriterEy, fileWriterEz;
 
-    ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
+    /*ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
         setDefaultValues();
-    }
+    }*/
+
+	ParametersForTightFocusing() : n_start(160, 128, 128), n_start_strip(16, 128, 128) {
+		setDefaultValues();
+	}
 
 
     void updateNotStrip() {
@@ -120,6 +124,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
 
 
     void setFieldFuncsNotStrip(GridParams::FieldFunc& fE, GridParams::FieldFunc& fB, GridParams::FieldFunc& fJ) {
+
         fE = [this](vec3<int> ind, int iter, const GridParams& gridParams) -> vec3<double> {
             double x = gridParams.getCoord(ind, E, Coordinate::x).x,
                 y = gridParams.getCoord(ind, E, Coordinate::x).y,
@@ -201,7 +206,8 @@ public:
     }
 
     void initialize() {
-        grid.initialize(params.gridParams);
+		params.print();
+        grid.initialize(params.gridParams, params.fieldSolver->getIfMpiFFT());
         params.fieldSolver->initialize(grid);
         grid.setShifts(params.fieldSolver->getSpatialShift(),
             params.fieldSolver->getTimeShift());

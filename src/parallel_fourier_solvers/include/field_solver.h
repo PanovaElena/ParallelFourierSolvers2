@@ -38,6 +38,10 @@ public:
 
     virtual void doFourierTransform(Direction dir) {}
 
+	virtual bool getIfMpiFFT() {
+		return false;
+	}
+
     vec3<vec3<>> getSpatialShift(Field field) const {
         return shiftSp[field];
     }
@@ -106,6 +110,9 @@ protected:
 };
 
 class FourierFieldSolver : public FieldSolver {
+
+protected:
+
     std::unique_ptr<FourierTransformOfGrid> fourierTransform;
     bool ifMpi = false;
     vec3<int> globalSize;
@@ -120,7 +127,13 @@ public:
     FourierFieldSolver(const FourierFieldSolver& fs) {
         this->grid = fs.grid;
         this->fourierTransform.reset(fs.fourierTransform->clone());
+		this->globalSize = fs.globalSize;
+		this->ifMpi = fs.ifMpi;
     }
+
+	bool getIfMpiFFT() override {
+		return ifMpi;
+	}
 
     void initialize(Grid3d& grid) override {
         FieldSolver::initialize(grid);
@@ -172,7 +185,7 @@ public:
     }
 
     std::string to_string() override {
-        return "PSATD";
+        return "PSATD " + globalSize.to_string();
     }
 
 protected:

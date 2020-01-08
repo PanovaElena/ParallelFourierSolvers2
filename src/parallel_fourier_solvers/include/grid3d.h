@@ -58,7 +58,7 @@ public:
 public:
     Grid3d();
     Grid3d(const Grid3d& gr);
-    Grid3d(const GridParams& params);
+    Grid3d(const GridParams& params, bool ifMpiFFT = false);
     ~Grid3d();
 
     //сравнение только по вещественным полям
@@ -69,7 +69,7 @@ public:
 
     Grid3d& operator=(const Grid3d& grid2);
 
-    void initialize(const GridParams& params);
+    void initialize(const GridParams& params, bool ifMpiFFT = false);
     void setFields();
     void setJ(int iter);
 

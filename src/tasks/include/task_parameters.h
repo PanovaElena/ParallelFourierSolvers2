@@ -35,12 +35,14 @@ public:
         fieldSolver.reset(t.fieldSolver->clone());
         gridParams = t.gridParams;
         nSeqSteps = t.nSeqSteps;
+		dt = t.dt;
     }
 
     TaskParameters& operator=(const TaskParameters& t) {
         fieldSolver.reset(t.fieldSolver->clone());
         gridParams = t.gridParams;
         nSeqSteps = t.nSeqSteps;
+		dt = t.dt;
         return *this;
     }
 
@@ -113,9 +115,7 @@ public:
     }
 
     ParallelTaskParameters& operator=(const ParallelTaskParameters& t) {
-        fieldSolver.reset(t.fieldSolver->clone());
-        gridParams = t.gridParams;
-        nSeqSteps = t.nSeqSteps;
+		TaskParameters::operator=(t);
         mask.reset(t.mask->clone());
         filter.reset(t.filter->clone());
         scheme.reset(t.scheme->clone());

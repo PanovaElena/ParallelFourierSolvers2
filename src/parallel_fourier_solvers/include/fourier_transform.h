@@ -14,13 +14,14 @@ protected:
 public:
     FourierTransformOfGrid() {}
     FourierTransformOfGrid(Grid3d& grid) {
-        initialize(grid);
+        initialize(grid, grid.sizeReal());
     }
-    void initialize(Grid3d& grid) {
-        this->globalSize = grid.sizeReal();
-        createPlans(grid);
-        grid.setFields();
-    }
+
+	void initialize(Grid3d& grid, const vec3<int> globalSize) {
+		this->globalSize = globalSize;
+		createPlans(grid);
+		grid.setFields();
+	}
 
     void fourierTransform(Grid3d& grid, Direction dir);
     void fourierTransform(Grid3d& grid, Field _field, Coordinate _coord, Direction dir);
@@ -40,13 +41,9 @@ protected:
 class FourierMpiTransformOfGrid : public FourierTransformOfGrid {
 public:
     FourierMpiTransformOfGrid() {}
-    FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int> globalSize) {
-        initialize(grid, globalSize);
-    }
-    void initialize(Grid3d& grid, const vec3<int> globalSize) {
-        this->globalSize = globalSize;
-        createPlans(grid);
-        grid.setFields();
+
+    FourierMpiTransformOfGrid(Grid3d& grid, const vec3<int> globalSize): FourierTransformOfGrid() {
+        this->initialize(grid, globalSize);
     }
 
     FourierTransformOfGrid* clone() const override {
@@ -55,7 +52,4 @@ public:
 
 protected:
     void createPlans(Grid3d& grid) override;
-
-private:
-    void initialize(Grid3d& grid);
 };
