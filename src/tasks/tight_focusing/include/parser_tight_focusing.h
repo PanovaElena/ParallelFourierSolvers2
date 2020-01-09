@@ -41,7 +41,7 @@ public:
 			params.dt = std::stod(m.find("-dtm")->second)*params.wavelength/constants::c;
 
         if (m.find("-factor") != m.end())
-            params.factor = std::stoi(m.find("-factor")->second);
+            params.factor = std::stod(m.find("-factor")->second);
 
         if (params.ifStrip == false)
             params.updateNotStrip();

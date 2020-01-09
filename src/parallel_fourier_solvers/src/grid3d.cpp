@@ -6,8 +6,8 @@ Grid3d::Grid3d(const Grid3d& gr) {
     initialize(gr.gridParams);
 }
 
-Grid3d::Grid3d(const GridParams& gridParams, bool ifMpiFFT) {
-    initialize(gridParams);
+Grid3d::Grid3d(const GridParams& gridParams, bool ifMpiFFT, int allocLocal) {
+    initialize(gridParams, ifMpiFFT, allocLocal);
 }
 
 void Grid3d::clearGrid() {
@@ -23,7 +23,7 @@ Grid3d::~Grid3d() {
     clearGrid();
 }
 
-void Grid3d::initialize(const GridParams& gridParams, bool ifMpiFFT) {
+void Grid3d::initialize(const GridParams& gridParams, bool ifMpiFFT, int allocLocal) {
     clearGrid();
 
     this->gridParams = gridParams;
@@ -31,18 +31,23 @@ void Grid3d::initialize(const GridParams& gridParams, bool ifMpiFFT) {
     vec3<int> n = gridParams.n;
 
 	if (ifMpiFFT) {
-		E.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) });
-		B.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) });
-		J.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) });
+		if (allocLocal < n.x * n.y * (n.z / 2 + 1))
+			allocLocal = n.x * n.y * (n.z / 2 + 1);
+		E.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
+		B.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
+		J.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
+		EF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
+		BF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
+		JF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
 	}
 	else {
 		E.initialize(n);
 		B.initialize(n);
 		J.initialize(n);
+		EF.initialize({ n.x, n.y, n.z / 2 + 1 });
+		BF.initialize({ n.x, n.y, n.z / 2 + 1 });
+		JF.initialize({ n.x, n.y, n.z / 2 + 1 });
 	}
-    EF.initialize({ n.x, n.y, n.z / 2 + 1 });
-    BF.initialize({ n.x, n.y, n.z / 2 + 1 });
-    JF.initialize({ n.x, n.y, n.z / 2 + 1 });
 
     if (this->gridParams.isFieldFuncsSetted())
         setFields();

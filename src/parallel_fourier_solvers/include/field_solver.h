@@ -227,7 +227,7 @@ public:
     }
 
     std::string to_string() override {
-        return "PSATD " + globalSize.to_string();
+        return "PSATD";
     }
 
 protected:

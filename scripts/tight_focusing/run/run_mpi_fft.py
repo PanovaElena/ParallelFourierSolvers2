@@ -1,8 +1,6 @@
 import sys
 import math
 sys.path.append("../../scripts/")
-import read_file as fr
-import graphics as gr
 import subprocess
 import os
 import shutil

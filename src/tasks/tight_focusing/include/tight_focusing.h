@@ -38,7 +38,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     std::string dir = "./";
 
     // computing
-    int factor = 1;
+    double factor = 1.0;
     vec3<int> n_start;
     vec3<int> n_start_strip;
     bool ifStrip = false;
@@ -50,7 +50,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     }
 
     void updateNotStrip() {
-        vec3<int> n = n_start * factor;
+        vec3<int> n = (vec3<int>)((vec3<>)n_start * factor);
         vec3<> a(-20e-4, -20e-4, -20e-4), b(20e-4, 20e-4, 20e-4);
         vec3<> d = (b - a) / (vec3<>)n;
         GridParams::FieldFunc fE, fB, fJ;
@@ -60,7 +60,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     }
 
     void updateStrip() {
-        vec3<int> n = n_start_strip * factor;
+        vec3<int> n = (vec3<int>)((vec3<>)n_start_strip * factor);
         vec3<> a(-19e-4, -20e-4, -20e-4), b(-15e-4, 20e-4, 20e-4);
         vec3<> d = (b - a) / (vec3<>)n;
         GridParams::FieldFunc fE, fB, fJ;
@@ -195,14 +195,13 @@ public:
     TightFocusing(): params() {
     }
 
-    void setParamsForTest(const ParametersForTightFocusing& p) {
+    void setParamsForTest(const ParametersForTightFocusing& p, int allocLocal = -1) {
         params = p;
-        initialize();
+        initialize(allocLocal);
     }
 
-    void initialize() {
-		params.print();
-        grid.initialize(params.gridParams, params.fieldSolver->getIfMpiFFT());
+    void initialize(int allocLocal = -1) {
+        grid.initialize(params.gridParams, params.fieldSolver->getIfMpiFFT(), allocLocal);
         params.fieldSolver->initialize(grid);
         grid.setShifts(params.fieldSolver->getSpatialShift(),
             params.fieldSolver->getTimeShift());

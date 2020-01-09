@@ -30,6 +30,11 @@ struct FieldForGrid : public vec3<Array3d<T>> {
         this->y.initialize(_n);
         this->z.initialize(_n);
     }
+	void initialize(int size1d, vec3<int> _n) {
+		this->x.initialize(size1d, _n);
+		this->y.initialize(size1d, _n);
+		this->z.initialize(size1d, _n);
+	}
     friend bool operator==(const FieldForGrid& f1, const FieldForGrid& f2) {
         return (f1.x == f2.x && f1.y == f2.y && f1.z == f2.z);
     }
@@ -58,7 +63,7 @@ public:
 public:
     Grid3d();
     Grid3d(const Grid3d& gr);
-    Grid3d(const GridParams& params, bool ifMpiFFT = false);
+    Grid3d(const GridParams& params, bool ifMpiFFT = false, int allocLocal = -1);
     ~Grid3d();
 
     //сравнение только по вещественным полям
@@ -69,7 +74,7 @@ public:
 
     Grid3d& operator=(const Grid3d& grid2);
 
-    void initialize(const GridParams& params, bool ifMpiFFT = false);
+    void initialize(const GridParams& params, bool ifMpiFFT = false, int allocLocal = -1);
     void setFields();
     void setJ(int iter);
 

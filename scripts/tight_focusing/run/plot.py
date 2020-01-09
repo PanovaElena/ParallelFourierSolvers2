@@ -1,7 +1,6 @@
 import sys
 import math as ma
 sys.path.append("../../scripts/")
-import read_file as fr
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -13,16 +12,16 @@ import args
 
 
 if (args.STRIP == 0):
-    Nx = 320
+    Nx = int(320*args.FACTOR)
     coordXMin = -20e-4
     coordXMax = 20e-4
 else:
-    Nx = 32
+    Nx = int(32*args.FACTOR)
     coordXMin = -19e-4
     coordXMax = -15e-4
     args.NUM_PROCESSES = 1
 
-Ny = 256
+Ny = int(256*args.FACTOR)
 
 DIR_PICTURES = "./pictures_%s/" % str(args.STRIP)
 DIR_RESULTS = "./results_%s/" % str(args.STRIP)

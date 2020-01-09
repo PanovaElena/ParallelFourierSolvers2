@@ -1,6 +1,6 @@
 # -----params-----
-N_ITER = 10
-NUM_PROCESSES = 2
-FACTOR = 1
+N_ITER = 4
+NUM_PROCESSES = 10
+FACTOR = 0.5
 STRIP = 0
 # ----------------
