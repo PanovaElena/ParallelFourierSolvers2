@@ -33,6 +33,7 @@ void Grid3d::initialize(const GridParams& gridParams, bool ifMpiFFT, int allocLo
 	if (ifMpiFFT) {
 		if (allocLocal < n.x * n.y * (n.z / 2 + 1))
 			allocLocal = n.x * n.y * (n.z / 2 + 1);
+        std::cout << "Make real arrs " << 2 * allocLocal << ", complex arrs " << allocLocal <<std::endl;
 		E.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
 		B.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
 		J.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
