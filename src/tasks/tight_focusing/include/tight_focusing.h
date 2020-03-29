@@ -19,21 +19,21 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     double TW = 1e+12 * 1e+7;
     double GeV = 1.602e-3;
 
-    double wavelength = 1e-4;
-    double pulseLength = 2e-4;
+    double wavelength = 1.0;
+    double pulseLength = 2 * wavelength;
     double phase = 0;
     double R0 = 16 * wavelength;
-    double totalPower = 50 * TW;
+    double totalPower = constants::c;
 
     double F_number = 0.3;
     double edgeSmoothingAngle = 0.1;
     double openingAngle = atan(1.0 / (2.0*F_number));
     double timeFieldInit = -R0 / constants::c;
 
-    double exclusionRadius = 1e-5;
+    double exclusionRadius = wavelength/10.0;
     double amp = sqrt(totalPower*4.0 / (constants::c*(1.0 - cos(openingAngle))));
 
-    double D = 2 * pulseLength;
+    double D = 3.5 * pulseLength;
 
     std::string dir = "./";
 
@@ -45,13 +45,13 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
     
     FileWriter fileWriterEx, fileWriterEy, fileWriterEz;
 
-    ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(32, 256, 256) {
+    ParametersForTightFocusing(): n_start(320, 256, 256), n_start_strip(56, 256, 256) {
         setDefaultValues();
     }
 
     void updateNotStrip() {
         vec3<int> n = (vec3<int>)((vec3<>)n_start * factor);
-        vec3<> a(-20e-4, -20e-4, -20e-4), b(20e-4, 20e-4, 20e-4);
+        vec3<> a(-20, -20, -20), b(20, 20, 20);
         vec3<> d = (b - a) / (vec3<>)n;
         GridParams::FieldFunc fE, fB, fJ;
         setFieldFuncsNotStrip(fE, fB, fJ);
@@ -61,7 +61,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
 
     void updateStrip() {
         vec3<int> n = (vec3<int>)((vec3<>)n_start_strip * factor);
-        vec3<> a(-19e-4, -20e-4, -20e-4), b(-15e-4, 20e-4, 20e-4);
+        vec3<> a(-22, -20, -20), b(-15, 20, 20);
         vec3<> d = (b - a) / (vec3<>)n;
         GridParams::FieldFunc fE, fB, fJ;
         setFieldFuncsStrip(fE, fB, fJ);
@@ -75,8 +75,8 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
 
         updateNotStrip();
 
-        dt = 0.2*wavelength /constants::c;
-        nSeqSteps = 10;//180;
+        dt = 16*wavelength /constants::c;
+        nSeqSteps = 1;
         nParSteps = 0;
 
         fileWriterEx.initialize(dir, E, x, Section(Section::XOY, Section::center));
@@ -112,7 +112,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
         double R = sqrt(x * x + y * y + z * z);
         if (R > exclusionRadius) {
             double angle = asin(sqrt(y * y + z * z) / R);
-            return (amp / R)*longitudinalFieldVariation(R + constants::c*(t + timeFieldInit))*transverseShape(angle)*(x < 0);
+            return (amp / R)*longitudinalFieldVariation(R - R0)*transverseShape(angle)*(x < 0);
         }
         return 0;
     }

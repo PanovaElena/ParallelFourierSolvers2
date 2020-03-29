@@ -20,17 +20,15 @@ void FieldSolverPSATD::operator()(double dt)
 				vec3<MyComplex> E = grid->EF(i, j, k), B = grid->BF(i, j, k),
 					J = 4 * constants::pi * grid->JF(i, j, k);
 				vec3<MyComplex> Jl = K * vec3<MyComplex>::dot(K, J);
-				vec3<MyComplex> El = vec3<MyComplex>(MyComplex(0.0), MyComplex(0.0), MyComplex(0.0));// K * vec3<MyComplex>::dot(K, E);
+				vec3<MyComplex> El = K * vec3<MyComplex>::dot(K, E);
 
 				if (normK == 0) {
 					grid->EF.write(i, j, k, E - J);
 					continue;
 				}
 
-				grid->EF.write(i, j, k, C*E + MyComplex::i() * S*vec3<MyComplex>::cross(K, B) -
-					S / (normK*constants::c)*J + (1 - C)*El + Jl * (S / (normK*constants::c) - dt));
-				grid->BF.write(i, j, k, C*B - MyComplex::i() * S*vec3<MyComplex>::cross(K, E) +
-					MyComplex::i() * ((1 - C) / (normK*constants::c))*vec3<MyComplex>::cross(K, J));
+				grid->EF.write(i, j, k, C*(E - El) + MyComplex::i() * S*vec3<MyComplex>::cross(K, B));
+				grid->BF.write(i, j, k, C*B - MyComplex::i() * S*vec3<MyComplex>::cross(K, E));
 			}
 }
 

@@ -23,10 +23,7 @@ void testBody(TightFocusing& tightFocusing) {
     for (int j = 0; j < p.nSeqSteps; j++) {
 
         p.fieldSolver->doFourierTransform(RtoC);
-        const int Ndt = 160/p.nSeqSteps;
-        std::cout << Ndt <<std::endl;
-        for (int l = 0; l < Ndt; l++)
-            p.fieldSolver->run(p.dt/(double)Ndt);
+        p.fieldSolver->run(p.dt);
         p.fieldSolver->doFourierTransform(CtoR);
 
         p.fileWriterEx.write(tightFocusing.grid, "global_fft_result_Ex_rank_" +
