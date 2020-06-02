@@ -51,11 +51,14 @@ public:
 template <class T>
 class Array3d {
     vec3<int> n;
+	int n1d;
     std::vector<T, NUMA_Allocator<T>> data;
+
     void allocMem();
 
 public:
     void initialize(vec3<int> n);
+	void initialize(int n1d, vec3<int> n);
     Array3d();
     Array3d(const Array3d& arr);
     Array3d(vec3<int> n);
@@ -91,7 +94,7 @@ public:
     T* getArray1d();
 
     vec3<int> size() const { return n; };
-    int size1d() const { return n.x * n.y * n.z; };
+    int size1d() const { return n1d; };
 
     void clear();
     void setToZeros();
@@ -100,15 +103,25 @@ public:
 template<class T>
 inline void Array3d<T>::allocMem()
 {
-    data.resize(n.x*n.y*n.z);
+    data.resize(n1d);
 }
 
 template<class T>
 inline void Array3d<T>::initialize(vec3<int> _n) {
     clear();
     n = _n;
+	n1d = n.x * n.y * n.z;
     allocMem();
     setToZeros();
+}
+
+template<class T>
+inline void Array3d<T>::initialize(int _n1d, vec3<int> _n) {
+	clear();
+	n = _n;
+	n1d = _n1d;
+	allocMem();
+	setToZeros();
 }
 
 template<class T>
@@ -118,6 +131,7 @@ inline Array3d<T>::Array3d() {
 template<class T>
 inline Array3d<T>::Array3d(const Array3d & arr) {
     n = arr.n;
+	n1d = arr.n1d;
 
     allocMem();
 
@@ -212,6 +226,6 @@ inline void Array3d<T>::clear() {
 
 template<class T>
 inline void Array3d<T>::setToZeros() {
-    for (int i = 0; i < n.x*n.y*n.z; i++)
+    for (int i = 0; i < n1d; i++)
         data[i] = 0;
 }

@@ -55,7 +55,7 @@ if (USE_OMP)
                 ${MKL_INTEL_THREAD_LIB} 
                 ${MKL_CORE_LIB} 
                 ${MKL_BLACS_INTELMPI_ILP64_LIB})
-        
+      
         # ICC
         if (${CMAKE_CXX_COMPILER} MATCHES "icc.*$" OR ${CMAKE_CXX_COMPILER} MATCHES "icl.*$")
             if (WIN32)

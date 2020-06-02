@@ -68,7 +68,7 @@ void FieldSolverPSTD::refreshE(const double dt) {
         for (int j = 0; j < ny; j++)
             for (int k = 0; k < nz; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), *grid);
+                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->sizeReal(), grid->getStep());
 
                 grid->EF.write(i, j, k, grid->EF(i, j, k) + complex_i * constants::c*dt*
                     vec3<MyComplex>::cross(K, grid->BF(i, j, k)) - 4 * constants::pi * grid->JF(i, j, k) * dt);
@@ -83,7 +83,7 @@ void FieldSolverPSTD::refreshB(const double dt) {
         for (int j = 0; j < ny; j++)
             for (int k = 0; k < nz; k++) {
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), *grid);
+                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->sizeReal(), grid->getStep());
 
                 grid->BF.write(i, j, k, grid->BF(i, j, k) - complex_i * constants::c*dt*
                     vec3<MyComplex>::cross(K, grid->EF(i, j, k)));

@@ -45,7 +45,7 @@ public:
         initializeFieldFuncs();
         GridParams gp(a, d, n, fE, fB, fJ);
         gr.initialize(gp);
-        ft.initialize(gr);
+        ft.initialize(gr, gr.sizeReal());
     }
 
     void MyTestBodyLag() {
@@ -53,7 +53,7 @@ public:
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
                 for (int k = 0; k < n / 2 + 1; k++) {
-                    vec3<MyComplex> K = FourierFieldSolver::getFreqVector(vec3<int>(i, j, k), gr);
+                    vec3<> K = FourierFieldSolver::getFreqVector(vec3<int>(i, j, k), gr.sizeReal(), gr.getStep());
                     gr.EF.x(i, j, k) *= MyComplex::getTrig(1, -c * (K.x + K.y + K.z));
                 }
         ft.fourierTransform(gr, CtoR);

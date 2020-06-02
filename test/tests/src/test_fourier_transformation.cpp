@@ -42,7 +42,7 @@ public:
         initializeFieldFuncs();
         GridParams gp(a, d, n, fE, fB, fJ);
         grid.initialize(gp);
-        ft.initialize(grid);
+        ft.initialize(grid, grid.sizeReal());
     }
 
     void MyTestBody(Field field, Coordinate coord) {

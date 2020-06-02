@@ -87,7 +87,7 @@ TEST(TestVector, vector_product_complex_vectors_are_orthogonal) {
 TEST(TestVector, decomposition_of_vector_into_components) {
     vec3<MyComplex> E(MyComplex(1, 2), MyComplex(4, 7), MyComplex(1, 3));
     vec3<MyComplex> K(MyComplex(1, 0), MyComplex(1, 0), MyComplex(1, 0));
-    vec3<MyComplex> k = K.normilize();
+    vec3<MyComplex> k = K.normalize();
     ASSERT_EQ(k.getNorm(), 1);
 
     vec3<MyComplex> El = k * vec3<MyComplex>::dot(k, E);
@@ -104,19 +104,19 @@ TEST(TestVector, decomposition_of_vector_into_components) {
 
 TEST(TestVector, normalize_double) {
     vec3<double> a(1, 1, 1);
-    ASSERT_EQ(a.normilize(), vec3<double>(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3)));
+    ASSERT_EQ(a.normalize(), vec3<double>(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3)));
 }
 
 TEST(TestVector, normalize_complex) {
     vec3<MyComplex> a(MyComplex(1, 0), MyComplex(1, 1), MyComplex(0, 1));
     vec3<MyComplex> res(MyComplex(0.5, 0), MyComplex(0.5, 0.5), MyComplex(0, 0.5));
-    ASSERT_EQ(res, a.normilize());
+    ASSERT_EQ(res, a.normalize());
 }
 
 TEST(TestVector, normalize_complex_2) {
     vec3<MyComplex> a(MyComplex(5, 6), MyComplex(-3, 4), MyComplex(4, 8));
     vec3<MyComplex> b = a;
-    a.normilize();
+    a.normalize();
 
     ASSERT_DOUBLE_EQ(b.getNorm(), sqrt(166));
 

@@ -46,6 +46,10 @@ public:
 
     virtual void doFourierTransform(Direction dir) {}
 
+	virtual bool getIfMpiFFT() {
+		return false;
+	}
+
     vec3<vec3<>> getSpatialShift(Field field) const {
         return shiftSp[field];
     }
@@ -131,42 +135,49 @@ protected:
 };
 
 class FourierFieldSolver : public FieldSolver {
+
+protected:
+
     std::unique_ptr<FourierTransformOfGrid> fourierTransform;
     bool ifMpi = false;
     vec3<int> globalSize;
+	int localStartX;
 
 public:
     FourierFieldSolver() {
         this->fourierTransform.reset(new FourierTransformOfGrid());
     }
     FourierFieldSolver(Grid3d& grid) {
+		globalSize = grid.sizeReal();
         initialize(grid);
     }
     FourierFieldSolver(const FourierFieldSolver& fs) {
         this->grid = fs.grid;
         this->fourierTransform.reset(fs.fourierTransform->clone());
+		this->globalSize = fs.globalSize;
+		this->ifMpi = fs.ifMpi;
+		this->localStartX = fs.localStartX;
     }
+
+	bool getIfMpiFFT() override {
+		return ifMpi;
+	}
 
     void initialize(Grid3d& grid) override {
         FieldSolver::initialize(grid);
-        if (!ifMpi)
-             fourierTransform.reset(new FourierTransformOfGrid(grid));
-        else fourierTransform.reset(new FourierMpiTransformOfGrid(grid, globalSize));
+        if (!ifMpi) {
+			globalSize = grid.sizeReal();
+			fourierTransform.reset(new FourierTransformOfGrid(grid));
+		}
+		else {
+			fourierTransform.reset(new FourierMpiTransformOfGrid(grid, globalSize, localStartX));
+		}
     }
 
-    void setGlobalFourierTransform(vec3<int> globalSize) {
+    void setGlobalFourierTransform(vec3<int> globalSize, int localStartX) {
         ifMpi = true;
         this->globalSize = globalSize;
-    }
-
-    static vec3<> getFreqVector(vec3<int> ind, const Grid3d& gr) {
-        double v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
-            (gr.getEnd().x - gr.getStart().x);
-        double v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /
-            (gr.getEnd().y - gr.getStart().y);
-        double v3 = (2 * constants::pi*((ind.z <= gr.sizeReal().z / 2) ? ind.z : ind.z - gr.sizeReal().z)) /
-            (gr.getEnd().z - gr.getStart().z);
-        return vec3<>(v1, v2, v3);
+		this->localStartX = localStartX;
     }
 
     static __forceinline vec3<> getFreqVector(vec3<int> ind, vec3<int> n, vec3<double> d) {
@@ -186,7 +197,7 @@ public:
     FieldSolverPSATD() {
         setShifts();
     }
-    FieldSolverPSATD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+    FieldSolverPSATD(Grid3d& grid) {
         initialize(grid);
     }
     FieldSolverPSATD(const FieldSolverPSATD& fs) : FourierFieldSolver(fs) {
@@ -224,7 +235,7 @@ public:
     FieldSolverPSTD() {
         setShifts();
     }
-    FieldSolverPSTD(Grid3d& grid, bool ifMpiF = false, const vec3<int>* globalSize = 0) {
+    FieldSolverPSTD(Grid3d& grid) {
         initialize(grid);
     }
     FieldSolverPSTD(const FieldSolverPSTD& fs) : FourierFieldSolver(fs) {
