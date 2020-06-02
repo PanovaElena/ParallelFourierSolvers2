@@ -159,14 +159,21 @@ public:
         this->globalSize = globalSize;
     }
 
-    static vec3<MyComplex> getFreqVector(vec3<int> ind, const Grid3d& gr) {
-        MyComplex v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
+    static vec3<> getFreqVector(vec3<int> ind, const Grid3d& gr) {
+        double v1 = (2 * constants::pi*((ind.x <= gr.sizeReal().x / 2) ? ind.x : ind.x - gr.sizeReal().x)) /
             (gr.getEnd().x - gr.getStart().x);
-        MyComplex v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /
+        double v2 = (2 * constants::pi*((ind.y <= gr.sizeReal().y / 2) ? ind.y : ind.y - gr.sizeReal().y)) /
             (gr.getEnd().y - gr.getStart().y);
-        MyComplex v3 = (2 * constants::pi*((ind.z <= gr.sizeReal().z / 2) ? ind.z : ind.z - gr.sizeReal().z)) /
+        double v3 = (2 * constants::pi*((ind.z <= gr.sizeReal().z / 2) ? ind.z : ind.z - gr.sizeReal().z)) /
             (gr.getEnd().z - gr.getStart().z);
-        return vec3<MyComplex>(v1, v2, v3);
+        return vec3<>(v1, v2, v3);
+    }
+
+    static __forceinline vec3<> getFreqVector(vec3<int> ind, vec3<int> n, vec3<double> d) {
+        double v1 = (2 * constants::pi*((ind.x <= n.x / 2) ? ind.x : ind.x - n.x)) / (n.x * d.x);
+        double v2 = (2 * constants::pi*((ind.y <= n.y / 2) ? ind.y : ind.y - n.y)) / (n.y * d.y);
+        double v3 = (2 * constants::pi*((ind.z <= n.z / 2) ? ind.z : ind.z - n.z)) / (n.z * d.z);
+        return vec3<>(v1, v2, v3);
     }
 
     void doFourierTransform(Direction dir) override {

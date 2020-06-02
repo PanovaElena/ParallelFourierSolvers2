@@ -43,14 +43,14 @@ public:
         return res;
     }
 
-    vec3& operator=(const vec3& v) {
+    __forceinline vec3& operator=(const vec3& v) {
         x = v.x;
         y = v.y;
         z = v.z;
         return *this;
     }
 
-    T& operator[](int i) {
+    __forceinline T& operator[](int i) {
         switch (i) {
         case 0: return x;
         case 1: return y;
@@ -59,7 +59,7 @@ public:
         }
     };
 
-    T operator[](int i) const {
+    __forceinline T operator[](int i) const {
         switch (i) {
         case 0: return x;
         case 1: return y;
@@ -77,75 +77,75 @@ public:
     }
 
 
-    friend vec3 operator+(const vec3& v1, const vec3& v2) {
+    __forceinline friend vec3 operator+(const vec3& v1, const vec3& v2) {
         return vec3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
     };
-    friend vec3 operator-(const vec3& v1, const vec3& v2) {
+    __forceinline friend vec3 operator-(const vec3& v1, const vec3& v2) {
         return vec3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     };
 
 
-    friend vec3 operator* (T b, const vec3& v) {
+    __forceinline friend vec3 operator* (T b, const vec3& v) {
         return v * b;
     };
-    friend vec3 operator* (const vec3& v, T b) {
+    __forceinline friend vec3 operator* (const vec3& v, T b) {
         return vec3(v.x*b, v.y*b, v.z*b);
     };
     //by components
-    friend vec3 operator*(const vec3& v1, const vec3& v2) {
+    __forceinline friend vec3 operator*(const vec3& v1, const vec3& v2) {
         return vec3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
     };
 
 
-    friend vec3 operator/(const vec3& v, T b) {
+    __forceinline friend vec3 operator/(const vec3& v, T b) {
         return vec3(v.x / b, v.y / b, v.z / b);
     };
     //by components
-    friend vec3 operator/(const vec3& v1, const vec3& v2) {
+    __forceinline friend vec3 operator/(const vec3& v1, const vec3& v2) {
         return vec3(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z);
     };
 
 
-    friend vec3 operator%(const vec3& v, T b) {
+    __forceinline friend vec3 operator%(const vec3& v, T b) {
         return vec3(v.x % b, v.y % b, v.z % b);
     };
     //by components
-    friend vec3 operator%(const vec3& v1, const vec3& v2) {
+    __forceinline friend vec3 operator%(const vec3& v1, const vec3& v2) {
         return vec3(v1.x % v2.x, v1.y % v2.y, v1.z % v2.z);
     };
 
 
-    friend bool operator==(const vec3& a, const vec3& b)
+    __forceinline friend bool operator==(const vec3& a, const vec3& b)
     {
         return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z));
     };
 
-    friend bool operator!=(const vec3& a, const vec3& b) {
+    __forceinline friend bool operator!=(const vec3& a, const vec3& b) {
         return !(a == b);
     };
 
-    friend bool operator<(const vec3& a, const vec3& b) {
+    __forceinline friend bool operator<(const vec3& a, const vec3& b) {
         return ((a.x < b.x) && (a.y < b.y) && (a.z < b.z));
     }
 
-    friend bool operator<=(const vec3& a, const vec3& b) {
+    __forceinline friend bool operator<=(const vec3& a, const vec3& b) {
         return ((a.x <= b.x) && (a.y <= b.y) && (a.z <= b.z));
     }
 
-    double getNorm() const
+    __forceinline double getNorm() const
     {
         return sqrt(absSquare(x) + absSquare(y) + absSquare(z));
     };
-    vec3 normilize() {
+    __forceinline vec3 normalize() {
         if (getNorm() == 0) return *this;
         (*this) = (*this)*(1.0 / getNorm());
         return *this;
     };
 
-    static T dot(const vec3& a, const vec3& b) {
+    __forceinline static T dot(const vec3& a, const vec3& b) {
         return (a.x * b.x + a.y * b.y + a.z * b.z);
     };
-    static vec3 cross(const vec3& a, const vec3& b) {
+    __forceinline static vec3 cross(const vec3& a, const vec3& b) {
         T c1, c2, c3;
         c1 = a.y * b.z - a.z * b.y;
         c2 = a.z * b.x - a.x * b.z;

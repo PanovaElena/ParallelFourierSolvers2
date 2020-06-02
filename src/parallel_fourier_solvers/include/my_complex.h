@@ -18,83 +18,83 @@ public:
         real = a;
         imag = 0;
     }
-    static MyComplex getTrig(double r, double fi) {
+    __forceinline static MyComplex getTrig(double r, double fi) {
         MyComplex z;
         z.real = r * cos(fi);
         z.imag = r * sin(fi);
         return z;
     }
 
-    void setReal(double real) {
+    __forceinline void setReal(double real) {
         this->real = real;
     }
-    void setImag(double imag) {
+    __forceinline void setImag(double imag) {
         this->imag = imag;
     }
-    double getReal() const {
+    __forceinline double getReal() const {
         return real;
     }
-    double getImag() const {
+    __forceinline double getImag() const {
         return imag;
     }
 
-    double getAbs() const {
+    __forceinline double getAbs() const {
         return sqrt(real * real + imag * imag);
     }
-    friend MyComplex operator*(const MyComplex& z, const double a) {
+    __forceinline friend MyComplex operator*(const MyComplex& z, const double a) {
         return MyComplex(z.real * a, z.imag * a);
     }
-    friend MyComplex operator*(const double a, const MyComplex& z) {
+    __forceinline friend MyComplex operator*(const double a, const MyComplex& z) {
         return MyComplex(z.real * a, z.imag * a);
     }
-    friend MyComplex operator*(const MyComplex& z1, const MyComplex& z2) {
+    __forceinline friend MyComplex operator*(const MyComplex& z1, const MyComplex& z2) {
         return MyComplex(z1.real * z2.real - z1.imag * z2.imag,
             z1.real * z2.imag + z2.real * z1.imag);
     }
-    friend MyComplex operator/(const MyComplex& z, const double a) {
+    __forceinline friend MyComplex operator/(const MyComplex& z, const double a) {
         return MyComplex(z.real / a, z.imag / a);
     }
-    friend MyComplex operator+(const MyComplex& z1, const MyComplex& z2) {
+    __forceinline friend MyComplex operator+(const MyComplex& z1, const MyComplex& z2) {
         return MyComplex(z1.real + z2.real, z1.imag + z2.imag);
     }
-    MyComplex& operator+=(const MyComplex& z2) {
+    __forceinline MyComplex& operator+=(const MyComplex& z2) {
         real += z2.real;
         imag += z2.imag;
         return *this;
     }
-    MyComplex& operator*=(const MyComplex& z2) {
+    __forceinline MyComplex& operator*=(const MyComplex& z2) {
         (*this) = (*this)*z2;
         return *this;
     }
-    MyComplex& operator-=(const MyComplex& z2) {
+    __forceinline MyComplex& operator-=(const MyComplex& z2) {
         real -= z2.real;
         imag -= z2.imag;
         return *this;
     }
-    friend MyComplex operator-(const MyComplex& z1, const MyComplex& z2) {
+    __forceinline friend MyComplex operator-(const MyComplex& z1, const MyComplex& z2) {
         return z1 + (-1)*z2;
     }
-    friend bool operator==(const MyComplex& z1, const MyComplex& z2) {
+    __forceinline friend bool operator==(const MyComplex& z1, const MyComplex& z2) {
         return (z1.real == z2.real && z1.imag == z2.imag);
     }
-    friend bool operator!=(const MyComplex& z1, const MyComplex& z2) {
+    __forceinline friend bool operator!=(const MyComplex& z1, const MyComplex& z2) {
         return !(z1 == z2);
     }
-    MyComplex conjugate() const {
+    __forceinline MyComplex conjugate() const {
         return MyComplex(real, -imag);
     }
-    operator double() { return real; }
+    __forceinline operator double() { return real; }
 	
-	friend std::ostream& operator<<(std::ostream& ost, const MyComplex& c) {
+    __forceinline friend std::ostream& operator<<(std::ostream& ost, const MyComplex& c) {
         ost << "(" << c.real << "," << c.imag << ")";
         return ost;
     }
 	
-	friend double abs(const MyComplex& a) {
+    __forceinline friend double abs(const MyComplex& a) {
         return sqrt(a.getReal()*a.getReal() + a.getImag()*a.getImag());
     }
 
-    static MyComplex i() {
+    __forceinline static MyComplex i() {
         return MyComplex(0, 1);
     }
 
