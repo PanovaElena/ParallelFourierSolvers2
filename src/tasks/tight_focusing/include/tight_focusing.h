@@ -126,9 +126,9 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
                 z = gridParams.getCoord(ind, E, Coordinate::x).z;
             vec3<> r(x, y, z);
             vec3<> s1 = vec3<>::cross(getPolarisation(), r);
-            s1.normilize();
+            s1.normalize();
             vec3<> s0 = vec3<>::cross(r, s1);
-            s0.normilize();
+            s0.normalize();
             return mask(x, y, z)*s0;
         };
 
@@ -138,7 +138,7 @@ struct ParametersForTightFocusing : public ParallelTaskParameters {
                 z = gridParams.getCoord(ind, B, Coordinate::x).z;
             vec3<> r(x, y, z);
             vec3<> s1 = vec3<>::cross(getPolarisation(), r);
-            s1.normilize();
+            s1.normalize();
             return mask(x, y, z)*s1;
         };
 

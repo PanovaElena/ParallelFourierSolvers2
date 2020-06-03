@@ -1,4 +1,5 @@
 #include "parallel_fourier_solver.h"
+#include <omp.h>
 
 Stat ParallelFourierSolver::initialize(const Grid3d & globalGrid, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
@@ -120,7 +121,7 @@ void ParallelFourierSolver::setLocalGrid(const GridParams & globalGP)
         for (int j = 0; j < localGP.n.y; j++)
             for (int k = 0; k < localGP.n.z; k++) {
                 vec3<int> indexInGlobalGrid =
-                    mod(vec3<int>(i, j, k) + domainStart - guardSize, localGP.n);
+                    mod(vec3<int>(i, j, k) + domainStart - guardSize, globalGP.n);
                 localGrid.E.write(i, j, k, globalGP.fE(indexInGlobalGrid, 0));
                 localGrid.B.write(i, j, k, globalGP.fB(indexInGlobalGrid, 0));
                 localGrid.J.write(i, j, k, globalGP.fJ(indexInGlobalGrid, 0));
@@ -134,7 +135,7 @@ void ParallelFourierSolver::setLocalGrid(const Grid3d & globalGrid)
         for (int j = 0; j < localGP.n.y; j++)
             for (int k = 0; k < localGP.n.z; k++) {
                 vec3<int> indexInGlobalGrid =
-                    mod(vec3<int>(i, j, k) + domainStart - guardSize, localGP.n);
+                    mod(vec3<int>(i, j, k) + domainStart - guardSize, globalGrid.getGridParams().n);
                 localGrid.E.write(i, j, k, globalGrid.E(indexInGlobalGrid));
                 localGrid.B.write(i, j, k, globalGrid.B(indexInGlobalGrid));
                 localGrid.J.write(i, j, k, globalGrid.J(indexInGlobalGrid));
@@ -146,7 +147,6 @@ GridParams ParallelFourierSolver::getLocalGridParams(const GridParams & globalGP
     GridParams gp = globalGP;
     gp.a = (vec3<>)(domainStart - guardSize)*globalGP.d + globalGP.a;
     gp.n = getFullSize();
-
     return gp;
 }
 
@@ -166,15 +166,16 @@ void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double 
     int numExchanges = numIter / maxIterBetweenExchange;
     int numIterBeforeLastExchange = numIter % maxIterBetweenExchange;
 
-    for (int i = 0; i < numExchanges - 1; i++)
-        doOneExchange(maxIterBetweenExchange, dt, false);
+    auto ifLast = [numExchanges, numIterBeforeLastExchange](int iter) {
+        if (numIterBeforeLastExchange > 0)
+            return iter == numExchanges;
+        else return iter == numExchanges - 1;
+    };
 
-    if (numIterBeforeLastExchange != 0) {
-        if (numExchanges != 0)
-            doOneExchange(maxIterBetweenExchange, dt, false);
-        doOneExchange(numIterBeforeLastExchange, dt, writeFile);
-    }
-    else doOneExchange(maxIterBetweenExchange, dt, writeFile);
+    for (int i = 0; i < numExchanges; i++)
+        doOneExchange(maxIterBetweenExchange, dt, ifLast(i) && writeFile);
+    if (numIterBeforeLastExchange > 0)
+        doOneExchange(numIterBeforeLastExchange, dt, ifLast(numExchanges) && writeFile);
 }
 
 void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
@@ -187,18 +188,35 @@ void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
         fileWriter.write(localGrid, "2__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_after_mask.csv", Double);
 
+    double t1 = omp_get_wtime();
+
     fieldSolver->doFourierTransform(RtoC);
+
+    double t2 = omp_get_wtime();
 
     for (int i = 0; i < numIter; i++)
         fieldSolver->run(dt);
 
+    double t3 = omp_get_wtime();
+
     fieldSolver->doFourierTransform(CtoR);
+
+    double t4 = omp_get_wtime();
 
     if (ifWrite)
         fileWriter.write(localGrid, "3__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_before_last_exc.csv", Double);
+
     mpiWorker.exchangeGuard();
+
+    double t5 = omp_get_wtime();
+
     if (ifWrite)
         fileWriter.write(localGrid, "4__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
             "_after_last_exc.csv", Double);
+
+    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time RtoC is " << t2 - t1 << " s" << std::endl;
+    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time PSATD is " << t3 - t2 << " s" << std::endl;
+    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time CtoR is " << t4 - t3 << " s" << std::endl;
+    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time exchange is " << t5 - t4 << " s" << std::endl;
 }

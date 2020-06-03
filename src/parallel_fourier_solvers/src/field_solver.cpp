@@ -45,15 +45,15 @@ void FieldSolverPSATD::operator()(const double dt)
                     vec3<MyComplex> Jl = K[k] * vec3<MyComplex>::dot(K[k], J);
                     vec3<MyComplex> El = K[k] * vec3<MyComplex>::dot(K[k], E);
 
-                    if (normK == 0) {
+                    if (normK[k] == 0.0) {
                         grid->EF.write(i, j, zIndex, E - J);
                     }
                     else {
                         grid->EF.write(i, j, zIndex, C[k] * E + complex_i * S[k] * vec3<MyComplex>::cross(K[k], B) -
                             S[k] / (normK[k] * constants::c)*J +
-                            (1 - C[k])*El + Jl * (S[k] / (normK[k] * constants::c) - dt));
+                            (1 - C[k])*El + Jl*(S[k] / (normK[k] * constants::c) - dt));
                         grid->BF.write(i, j, zIndex, C[k] * B - complex_i * S[k] * vec3<MyComplex>::cross(K[k], E) +
-                            complex_i * ((1 - C[k]) / (normK[k] * constants::c))*vec3<MyComplex>::cross(K[k], J));
+                            complex_i*((1 - C[k]) / (normK[k] * constants::c))*vec3<MyComplex>::cross(K[k], J));
                     }
                 }
             }

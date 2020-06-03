@@ -22,6 +22,11 @@ public:
         const size_t size_vt = sizeof(value_type);
         const size_t len = num * size_vt;
         const size_t num_threads = omp_get_max_threads();
+        if (num_threads > num) {
+            value_type* p = reinterpret_cast<value_type*>(std::malloc(len));
+            std::memset(p, 0, len);
+            return p;
+        }
         const size_t block_size = (num + num_threads - 1) / num_threads * size_vt;
         const size_t block_size_rem = len - block_size * (num_threads - 1);
         char * p = reinterpret_cast<char*>(std::malloc(len));

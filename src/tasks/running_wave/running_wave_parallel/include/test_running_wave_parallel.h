@@ -17,7 +17,7 @@ public:
         task.setParamsForTest(p); 
     }
 
-    TestRunningWaveParallel() : task() {
+    TestRunningWaveParallel() : task(true) {
         setNameFiles();
     }
 
@@ -41,24 +41,24 @@ public:
 
     Stat doParallelPart() {
 
-        FileWriter fw(task.params.fileWriter.getDirectory(), task.params.fileWriter.getField(),
-            task.params.fileWriter.getCoord(), Section(Section::XOZ, Section::center, Section::XOY, Section::start));
+        //FileWriter fw(task.params.fileWriter.getDirectory(), task.params.fileWriter.getField(),
+        //    task.params.fileWriter.getCoord(), Section(Section::XOZ, Section::center, Section::XOY, Section::start));
         // it is for spectrum writing
 
-        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
-            task.params.fieldSolver->doFourierTransform(RtoC);
-            fw.write(task.grid, "spectrum_before_div.csv", Complex);
-            task.params.fieldSolver->doFourierTransform(CtoR);
-        }
+        //if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
+        //    task.params.fieldSolver->doFourierTransform(RtoC);
+        //    fw.write(task.grid, "spectrum_before_div.csv", Complex);
+        //    task.params.fieldSolver->doFourierTransform(CtoR);
+        //}
 
         if (initializeParallelSolver() == Stat::ERROR)
             return Stat::ERROR;
 
-        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
-            parallelSolver.getFieldSolver().doFourierTransform(RtoC);
-            fw.write(parallelSolver.getGrid(), "spectrum_after_div.csv", Complex);
-            parallelSolver.getFieldSolver().doFourierTransform(CtoR);
-        }
+        //if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
+        //    parallelSolver.getFieldSolver().doFourierTransform(RtoC);
+        //    fw.write(parallelSolver.getGrid(), "spectrum_after_div.csv", Complex);
+        //    parallelSolver.getFieldSolver().doFourierTransform(CtoR);
+        //}
 
         //std::cout << "parallel field solver\n";
         double t1 = omp_get_wtime();
@@ -70,19 +70,19 @@ public:
             std::cout << "Time of parallel version is " << t2 - t1 << "\n";
 
         //std::cout << "assemble\n";
-        parallelSolver.assembleResults(task.grid);
+        //parallelSolver.assembleResults(task.grid);
 
-        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
-            task.params.fieldSolver->doFourierTransform(RtoC);
-            fw.write(task.grid, "spectrum_before_filter.csv", Complex);
-            task.params.filter->apply(task.grid);
-            fw.write(task.grid, "spectrum_after_filter.csv", Complex);
-            task.params.fieldSolver->doFourierTransform(CtoR);
-        }
+        //if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT) {
+        //    task.params.fieldSolver->doFourierTransform(RtoC);
+        //    fw.write(task.grid, "spectrum_before_filter.csv", Complex);
+        //    task.params.filter->apply(task.grid);
+        //    fw.write(task.grid, "spectrum_after_filter.csv", Complex);
+        //    task.params.fieldSolver->doFourierTransform(CtoR);
+        //}
 
         //std::cout << "writing to file assembled result\n";
-        if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
-            task.params.fileWriter.write(task.grid, nameFileSecondSteps);
+        //if (MPIWrapper::MPIRank() == MPIWrapper::MPIROOT)
+        //    task.params.fileWriter.write(task.grid, nameFileSecondSteps);
 
         return Stat::OK;
     }

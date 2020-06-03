@@ -103,18 +103,18 @@ public:
         this->commonGrid = commonGrid;
     }
 
-    void setParamsForTest(const ParametersForRunningWave& p) {
+    void setParamsForTest(const ParametersForRunningWave& p, int allocLocal = -1) {
         params = p;
         if (params.dimensionOfOutputData == 2)
             params.fileWriter.setSection(Section(Section::XOZ, Section::center));
         else if (params.dimensionOfOutputData == 1)
             params.fileWriter.setSection(Section(Section::XOY, Section::center,
                 Section::XOZ, Section::center));
-        if (commonGrid) initialize();
+        if (commonGrid) initialize(allocLocal);
     }
 
-    void initialize() {
-        grid.initialize(params.gridParams);
+    void initialize(int allocLocal = -1) {
+        grid.initialize(params.gridParams, params.fieldSolver->getIfMpiFFT(), allocLocal);
         params.fieldSolver->initialize(grid);
         grid.setShifts(params.fieldSolver->getSpatialShift(),
             params.fieldSolver->getTimeShift());
