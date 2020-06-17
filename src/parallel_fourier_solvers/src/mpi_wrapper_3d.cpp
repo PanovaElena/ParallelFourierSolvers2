@@ -23,21 +23,31 @@ Stat MPIWrapper3d::setSize(vec3<int> size)
     return Stat::OK;
 }
 
-Stat MPIWrapper3d::MPISendSubarray(Array3d<double>& arr, Boards boards,
-    vec3<int> dest, int tag, bool ifBlock) const
+Stat MPIWrapper3d::MPIISendSubarray(Array3d<double>& arr, Boards boards,
+    vec3<int> dest, int tag) const
 {
-    MPI_Datatype subarray;
-    if (createSubarray(subarray, boards, arr.size()) == Stat::ERROR)
+    std::pair<MPI_Datatype, bool> sPair;
+    MPI_Datatype& subarray = sPair.first;
+    if (createSubarray(sPair, boards, arr.size()) == Stat::ERROR || !sPair.second)
         return Stat::ERROR;
 
-    if (ifBlock) {
-        MPI_Send(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm);
-    }
-    else {
-        MPIRequest request;
-        MPI_Isend(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm, &request);
-        MPI_Request_free(&request);
-    }
+    MPIRequest request;
+    MPI_Isend(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm, &request);
+    MPI_Request_free(&request);
+
+    freeSubarray(subarray);
+    return Stat::OK;
+}
+
+Stat MPIWrapper3d::MPISendSubarray(Array3d<double>& arr, Boards boards,
+    vec3<int> dest, int tag) const
+{
+    std::pair<MPI_Datatype, bool> sPair;
+    MPI_Datatype& subarray = sPair.first;
+    if (createSubarray(sPair, boards, arr.size()) == Stat::ERROR || !sPair.second)
+        return Stat::ERROR;
+
+    MPI_Send(&(arr[0]), 1, subarray, getScalarRank(dest), tag, cartComm);
 
     freeSubarray(subarray);
     return Stat::OK;
@@ -45,8 +55,9 @@ Stat MPIWrapper3d::MPISendSubarray(Array3d<double>& arr, Boards boards,
 
 Stat MPIWrapper3d::MPIRecvSubarray(Array3d<double>& arr, Boards boards, vec3<int> source, int tag) const
 {
-    MPI_Datatype subarray;
-    if (createSubarray(subarray, boards, arr.size()) == Stat::ERROR)
+    std::pair<MPI_Datatype, bool> sPair;
+    MPI_Datatype& subarray = sPair.first;
+    if (createSubarray(sPair, boards, arr.size()) == Stat::ERROR || !sPair.second)
         return Stat::ERROR;
     MPI_Recv(&(arr[0]), 1, subarray, getScalarRank(source), tag, cartComm,
         MPI_STATUS_IGNORE);
@@ -54,8 +65,10 @@ Stat MPIWrapper3d::MPIRecvSubarray(Array3d<double>& arr, Boards boards, vec3<int
     return Stat::OK;
 }
 
-Stat MPIWrapper3d::createSubarray(MPI_Datatype & subarray, Boards board, vec3<int> arrSize) const
+Stat MPIWrapper3d::createSubarray(std::pair<MPI_Datatype, bool> & sPair, Boards board, vec3<int> arrSize) const
 {
+    MPI_Datatype& subarray = sPair.first;
+    sPair.second = false;
     if (board.right - board.left < vec3<int>(0))
         return Stat::ERROR;
 
@@ -67,6 +80,8 @@ Stat MPIWrapper3d::createSubarray(MPI_Datatype & subarray, Boards board, vec3<in
     MPI_Type_create_subarray(3, bigsizes, subsizes, starts,
         MPI_ORDER_C, MPI_DOUBLE, &subarray);
     MPI_Type_commit(&subarray);
+
+    sPair.second = true;
     return Stat::OK;
 }
 
@@ -119,34 +134,37 @@ void MPIWrapperGrid::checkGuards()
 }
 
 void MPIWrapperGrid::sendGuard(Array3d<double>& arr, Coordinate coord,
-    Side side, int tag, bool ifBlock)
+    Side side, int tag)
 {
     if (!ifExchange[coord]) return;
-    MPI_Datatype& subarray = sendTypes[coord].getElem(side);
-    if (ifBlock) {
-        MPI_Send(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
-            tag, cartComm);
-    }
-    else {
-        MPIRequest request;
-        MPI_Isend(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
-            tag, cartComm, &request);
-        MPI_Request_free(&request);
-    }
+    MPI_Datatype& subarray = sendTypes[coord].getElem(side).first;
+    MPI_Send(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
+        tag, cartComm);
+}
+
+void MPIWrapperGrid::iSendGuard(Array3d<double>& arr, Coordinate coord,
+    Side side, int tag)
+{
+    if (!ifExchange[coord]) return;
+    MPI_Datatype& subarray = sendTypes[coord].getElem(side).first;
+    MPIRequest request;
+    MPI_Isend(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
+        tag, cartComm, &request);
+    MPI_Request_free(&request);
 }
 
 void MPIWrapperGrid::recvGuard(Array3d<double>& arr,
     Coordinate coord, Side side, int tag)
 {
     if (!ifExchange[coord]) return;
-    MPI_Datatype& subarray = recvTypes[coord].getElem(side);
+    MPI_Datatype& subarray = recvTypes[coord].getElem(side).first;
     MPI_Recv(&(arr[0]), 1, subarray, getNeighbourRank(coord, side),
         tag, cartComm, MPI_STATUS_IGNORE);
 }
 
 Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
 {
-    if (ifSubarrInit) freeSubarrays();
+    freeSubarrays();
 
     for (int coord = 0; coord < 3; coord++) {
         if (!ifExchange[coord]) continue;
@@ -157,10 +175,7 @@ Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
             return Stat::ERROR;
 
         createSubarray(sendTypes[coord].left, sendBoards[coord].left, arrSize);
-        ifSendTypeCreated[coord].left = true;
-
         createSubarray(sendTypes[coord].right, sendBoards[coord].right, arrSize);
-        ifSendTypeCreated[coord].right = true;
 
         // recv
         if (recvBoards[coord].left.right - recvBoards[coord].left.left !=
@@ -169,46 +184,37 @@ Stat MPIWrapperGrid::createSubarrays(vec3<int> arrSize)
 
         if (operation == Operation::copy) {
             createSubarray(recvTypes[coord].left, recvBoards[coord].left, arrSize);
-            ifRecvTypeCreated[coord].left = true;
-
             createSubarray(recvTypes[coord].right, recvBoards[coord].right, arrSize);
-            ifRecvTypeCreated[coord].right = true;
         }
         else {
             vec3<int> n = recvBoards[coord].left.right - recvBoards[coord].left.left;
-
             createSubarray(recvTypes[coord].left, Boards(vec3<int>(0), n), n);
-            ifRecvTypeCreated[coord].left = true;
-
             createSubarray(recvTypes[coord].right, Boards(vec3<int>(0), n), n);
-            ifRecvTypeCreated[coord].right = true;
         }
     }
-    ifSubarrInit = true;
     return Stat::OK;
 }
 
 void MPIWrapperGrid::freeSubarrays()
 {
     for (int coord = 0; coord < 3; coord++) {
-        if (ifSendTypeCreated[coord].left) {
-            freeSubarray(sendTypes[coord].left);
-            ifSendTypeCreated[coord].left = false;
+        if (sendTypes[coord].left.second) {
+            freeSubarray(sendTypes[coord].left.first);
+            sendTypes[coord].left.second = false;
         }
-        if (ifSendTypeCreated[coord].right) {
-            freeSubarray(sendTypes[coord].right);
-            ifSendTypeCreated[coord].right = false;
+        if (sendTypes[coord].right.second) {
+            freeSubarray(sendTypes[coord].right.first);
+            sendTypes[coord].right.second = false;
         }
-        if (ifRecvTypeCreated[coord].left) {
-            freeSubarray(recvTypes[coord].left);
-            ifRecvTypeCreated[coord].left = false;
+        if (recvTypes[coord].left.second) {
+            freeSubarray(recvTypes[coord].left.first);
+            recvTypes[coord].left.second = false;
         }
-        if (ifRecvTypeCreated[coord].right) {
-            freeSubarray(recvTypes[coord].right);
-            ifRecvTypeCreated[coord].right = false;
+        if (recvTypes[coord].right.second) {
+            freeSubarray(recvTypes[coord].right.first);
+            recvTypes[coord].right.second = false;
         }
     }
-    ifSubarrInit = false;
 }
 
 int MPIWrapperGrid::getNeighbourRank(Coordinate coord, Side side) const

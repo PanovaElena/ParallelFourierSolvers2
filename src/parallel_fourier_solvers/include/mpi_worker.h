@@ -1,6 +1,5 @@
 #pragma once
 #include "mpi_wrapper_3d.h"
-#include <memory>
 #include <iostream>
 #include <functional>
 #include "status.h"
@@ -11,8 +10,8 @@ private:
     static const int NFIELDS = 2;
     static const int NCOORDS = 3;
 
-    std::shared_ptr<MPIWrapperGrid> mpiWrapper;
-    std::shared_ptr<ParallelScheme> scheme;
+    MPIWrapperGrid * mpiWrapper;
+    ParallelScheme * scheme;
     Grid3d* grid = 0;
 
     vec3<Array3d<double>> tmpArrays;  // for sum scheme
@@ -20,16 +19,16 @@ private:
 public:
     MPIWorker() {}
 
-    MPIWorker(std::shared_ptr<MPIWrapperGrid>  mpiWrapper,
-        std::shared_ptr<ParallelScheme> scheme, Grid3d * grid) {
+    MPIWorker(MPIWrapperGrid * mpiWrapper,
+        ParallelScheme * scheme, Grid3d * grid) {
         initialize(mpiWrapper, scheme, grid);
     }
 
-    Stat initialize(std::shared_ptr<MPIWrapperGrid> mpiWrapper,
-        std::shared_ptr<ParallelScheme> scheme, Grid3d * grid);
+    Stat initialize(MPIWrapperGrid * mpiWrapper,
+        ParallelScheme * scheme, Grid3d * grid);
 
     void exchangeGuard();
-    void assembleResultsToRoot(Grid3d& commonGrid);
+    void assembleResultsToRoot(Grid3d* commonGrid);
 
 private:
 
@@ -44,6 +43,6 @@ private:
     void exchangeTwoProcesses(Coordinate coord);
 
     void sendToRootProcess();
-    void recvFromAllProcesses(Grid3d& commonGrid);
+    void recvFromAllProcesses(Grid3d* commonGrid);
 
 };

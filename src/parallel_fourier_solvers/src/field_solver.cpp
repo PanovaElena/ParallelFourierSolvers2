@@ -63,30 +63,59 @@ void FieldSolverPSATD::operator()(const double dt)
 void FieldSolverPSTD::refreshE(const double dt) {
     const MyComplex complex_i = MyComplex::i();
     const int nx = grid->sizeComplex().x, ny = grid->sizeComplex().y, nz = grid->sizeComplex().z;
+    const vec3<double> d = grid->getStep();
+    const vec3<int> nReal = grid->sizeReal();
+    const int chunkSize = 32;
+    const int nChunks = nz / chunkSize;
+    const int chunkRem = nz % chunkSize;
+
 #pragma omp parallel for collapse(2)
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < ny; j++)
-            for (int k = 0; k < nz; k++) {
+            for (int chunk = 0; chunk < nChunks + 1; chunk++) {
+                int kLast = chunk == nChunks ? chunkRem : chunkSize;
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->sizeReal(), grid->getStep());
-
-                grid->EF.write(i, j, k, grid->EF(i, j, k) + complex_i * constants::c*dt*
-                    vec3<MyComplex>::cross(K, grid->BF(i, j, k)) - 4 * constants::pi * grid->JF(i, j, k) * dt);
+                vec3<> K[chunkSize];
+#pragma ivdep
+                for (int k = 0; k < kLast; k++) {
+                    K[k] = getFreqVector(vec3<int>(i, j, k + chunk * chunkSize), nReal, d);
+                }
+#pragma ivdep
+                for (int k = 0; k < kLast; k++) {
+                    int zIndex = k + chunk * chunkSize;
+                    grid->EF.write(i, j, zIndex, grid->EF(i, j, zIndex) + complex_i * constants::c*dt*
+                        vec3<MyComplex>::cross(K[k], grid->BF(i, j, zIndex)) -
+                        4 * constants::pi * grid->JF(i, j, zIndex) * dt);
+                }
             }
 }
 
 void FieldSolverPSTD::refreshB(const double dt) {
     const MyComplex complex_i = MyComplex::i();
     const int nx = grid->sizeComplex().x, ny = grid->sizeComplex().y, nz = grid->sizeComplex().z;
+    const vec3<double> d = grid->getStep();
+    const vec3<int> nReal = grid->sizeReal();
+    const int chunkSize = 32;
+    const int nChunks = nz / chunkSize;
+    const int chunkRem = nz % chunkSize;
+
 #pragma omp parallel for collapse(2)
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < ny; j++)
-            for (int k = 0; k < nz; k++) {
+            for (int chunk = 0; chunk < nChunks + 1; chunk++) {
+                int kLast = chunk == nChunks ? chunkRem : chunkSize;
 
-                vec3<MyComplex> K = getFreqVector(vec3<int>(i, j, k), grid->sizeReal(), grid->getStep());
-
-                grid->BF.write(i, j, k, grid->BF(i, j, k) - complex_i * constants::c*dt*
-                    vec3<MyComplex>::cross(K, grid->EF(i, j, k)));
+                vec3<> K[chunkSize];
+#pragma ivdep
+                for (int k = 0; k < kLast; k++) {
+                    K[k] = getFreqVector(vec3<int>(i, j, k + chunk * chunkSize), nReal, d);
+                }
+#pragma ivdep
+                for (int k = 0; k < kLast; k++) {
+                    int zIndex = k + chunk * chunkSize;
+                    grid->BF.write(i, j, zIndex, grid->BF(i, j, zIndex) - complex_i * constants::c*dt*
+                        vec3<MyComplex>::cross(K[k], grid->EF(i, j, zIndex)));
+                }
             }
 }
 

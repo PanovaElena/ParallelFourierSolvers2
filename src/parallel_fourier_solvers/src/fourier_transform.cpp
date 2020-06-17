@@ -11,14 +11,14 @@
 #include "fftw3-mpi.h"
 #endif __USE_GLOBAL_FFT__
 
-void FourierTransformOfGrid::createPlans(Grid3d & grid)
+void FourierTransformOfGrid::createPlans(Grid3d* grid)
 {
     int Nx = globalSize.x, Ny = globalSize.y, Nz = globalSize.z;
     for (int field = 0; field < 3; field++)
         for (int coord = 0; coord < 3; coord++) {
-            Array3d<double>& arrD = (grid.*getMemberPtrField<double>((Field)field))
+            Array3d<double>& arrD = (grid->*getMemberPtrField<double>((Field)field))
                 .*getMemberPtrFieldCoord<double>((Coordinate)coord);
-            Array3d<MyComplex>& arrC = (grid.*getMemberPtrField<MyComplex>((Field)field))
+            Array3d<MyComplex>& arrC = (grid->*getMemberPtrField<MyComplex>((Field)field))
                 .*getMemberPtrFieldCoord<MyComplex>((Coordinate)coord);
 
             fftw_plan_with_nthreads(omp_get_max_threads());
@@ -56,9 +56,9 @@ void FourierTransformOfGrid::makeFFT(Array3d<double>& arr1, Array3d<MyComplex>& 
     }
 }
 
-void FourierTransformOfGrid::fourierTransform(Grid3d & grid, Direction dir)
+void FourierTransformOfGrid::fourierTransform(Grid3d* grid, Direction dir)
 {
-    if (grid.getLastFourierTransformDirect() == dir) {
+    if (grid->getLastFourierTransformDirect() == dir) {
         std::cout << "Try to transform to the same direction: " << dir << std::endl;
         return;
     }
@@ -73,30 +73,30 @@ void FourierTransformOfGrid::fourierTransform(Grid3d & grid, Direction dir)
     fourierTransform(grid, J, y, dir);
     fourierTransform(grid, J, z, dir);
 
-    grid.setLastFourierTransformDirect(dir);
+    grid->setLastFourierTransformDirect(dir);
 }
 
-void FourierTransformOfGrid::fourierTransform(Grid3d & grid, Field _field, Coordinate _coord,
+void FourierTransformOfGrid::fourierTransform(Grid3d* grid, Field _field, Coordinate _coord,
     Direction dir)
 {
-    Array3d<double>& arrD = (grid.*getMemberPtrField<double>(_field))
+    Array3d<double>& arrD = (grid->*getMemberPtrField<double>(_field))
         .*getMemberPtrFieldCoord<double>(_coord);
-    Array3d<MyComplex>& arrC = (grid.*getMemberPtrField<MyComplex>(_field))
+    Array3d<MyComplex>& arrC = (grid->*getMemberPtrField<MyComplex>(_field))
         .*getMemberPtrFieldCoord<MyComplex>(_coord);
 
     makeFFT(arrD, arrC, globalSize, dir, plans[dir][_field][_coord]);
 }
 
 
-void FourierMpiTransformOfGrid::createPlans(Grid3d & grid)
+void FourierMpiTransformOfGrid::createPlans(Grid3d* grid)
 {
 #ifdef __USE_GLOBAL_FFT__
     int Nx = globalSize.x, Ny = globalSize.y, Nz = globalSize.z;
     for (int field = 0; field < 3; field++)
         for (int coord = 0; coord < 3; coord++) {
-            Array3d<double>& arrD = (grid.*getMemberPtrField<double>((Field)field))
+            Array3d<double>& arrD = (grid->*getMemberPtrField<double>((Field)field))
                 .*getMemberPtrFieldCoord<double>((Coordinate)coord);
-            Array3d<MyComplex>& arrC = (grid.*getMemberPtrField<MyComplex>((Field)field))
+            Array3d<MyComplex>& arrC = (grid->*getMemberPtrField<MyComplex>((Field)field))
                 .*getMemberPtrFieldCoord<MyComplex>((Coordinate)coord);
 
             fftw_plan_with_nthreads(omp_get_max_threads());

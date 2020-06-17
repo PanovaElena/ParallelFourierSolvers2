@@ -1,1 +1,0 @@
-create_executable(running_wave_just_parallel)

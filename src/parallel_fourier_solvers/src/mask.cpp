@@ -4,17 +4,17 @@
 #include "class_member_ptr.h"
 #include "array3d.h"
 
-void Mask::apply(Grid3d& grid, Field f, Coordinate c)
+void Mask::apply(Grid3d* grid, Field f, Coordinate c)
 {
-    Array3d<double>& field = (grid.*getMemberPtrField<double>(f)).*getMemberPtrFieldCoord<double>(c);
+    Array3d<double>& field = (grid->*getMemberPtrField<double>(f)).*getMemberPtrFieldCoord<double>(c);
 #pragma omp parallel for
-    for (int i = 0; i < grid.sizeReal().x; i++)
-        for (int j = 0; j < grid.sizeReal().y; j++)
-            for (int k = 0; k < grid.sizeReal().z; k++)
+    for (int i = 0; i < grid->sizeReal().x; i++)
+        for (int j = 0; j < grid->sizeReal().y; j++)
+            for (int k = 0; k < grid->sizeReal().z; k++)
                 field(i, j, k) *= compMult({ i, j, k });
 }
 
-void Mask::apply(Grid3d& grid)
+void Mask::apply(Grid3d* grid)
 {
     apply(grid, E, x);
     apply(grid, E, y);
@@ -31,13 +31,14 @@ double SimpleMask::compMult(vec3<int> ind)
 {
     if (ind.x < guardSize.x || ind.x >= domainSize.x + guardSize.x ||
         ind.y < guardSize.y || ind.y >= domainSize.y + guardSize.y ||
-        ind.z < guardSize.z || ind.z >= domainSize.z + guardSize.z) return 0;
-    return 1;
+        ind.z < guardSize.z || ind.z >= domainSize.z + guardSize.z)
+        return 0.0;
+    return 1.0;
 }
 
 double SmoothMask::compMult(vec3<int> ind)
 {
-    double res = 1;
+    double res = 1.0;
     if (maskWidth.x > 0) res *= f(ind.x, domainSize.x, guardSize.x, maskWidth.x);
     if (maskWidth.y > 0) res *= f(ind.y, domainSize.y, guardSize.y, maskWidth.y);
     if (maskWidth.z > 0) res *= f(ind.z, domainSize.z, guardSize.z, maskWidth.z);
@@ -45,15 +46,15 @@ double SmoothMask::compMult(vec3<int> ind)
 }
 
 double SmoothMask::f(int i, int domainSize, int guardSize, int maskWidth) {
-    if (i < guardSize - maskWidth / 2 || i > guardSize + domainSize + maskWidth / 2)
-        return 0;
-    if (i <= guardSize + maskWidth / 2 && i >= guardSize - maskWidth / 2) {
-        i -= guardSize - maskWidth / 2;
-        return sin(i*constants::pi / (2 * maskWidth))*sin(i*constants::pi / (2 * maskWidth));
+    if (i < guardSize - maskWidth*0.5 || i > guardSize + domainSize + maskWidth*0.5)
+        return 0.0;
+    if (i <= guardSize + maskWidth*0.5 && i >= guardSize - maskWidth*0.5) {
+        i -= guardSize - maskWidth*0.5;
+        return sin(i*constants::pi / (2.0*maskWidth))*sin(i*constants::pi / (2.0*maskWidth));
     }
-    if (i <= guardSize + domainSize + maskWidth / 2 && i >= guardSize + domainSize - maskWidth / 2) {
-        i -= guardSize + domainSize - maskWidth / 2;
-        return cos(i*constants::pi / (2 * maskWidth))*cos(i*constants::pi / (2 * maskWidth));
+    if (i <= guardSize + domainSize + maskWidth*0.5 && i >= guardSize + domainSize - maskWidth*0.5) {
+        i -= guardSize + domainSize - maskWidth*0.5;
+        return cos(i*constants::pi / (2.0*maskWidth))*cos(i*constants::pi / (2.0*maskWidth));
     }
-    return 1;
+    return 1.0;
 }

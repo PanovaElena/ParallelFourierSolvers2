@@ -3,11 +3,16 @@
 Grid3d::Grid3d() :E(), B(), J(), EF(), BF(), JF() {}
 
 Grid3d::Grid3d(const Grid3d& gr) {
-    initialize(gr.gridParams);
+    create(gr.gridParams, gr.allocLocal);
+    setFields();
 }
 
-Grid3d::Grid3d(const GridParams& gridParams, bool ifMpiFFT, int allocLocal) {
-    initialize(gridParams, ifMpiFFT, allocLocal);
+Grid3d::Grid3d(const GridParams& gridParams) {
+    create(gridParams);
+}
+
+Grid3d::Grid3d(const GridParams& gridParams, size_t allocLocal) {
+    create(gridParams, allocLocal);
 }
 
 void Grid3d::clearGrid() {
@@ -23,52 +28,69 @@ Grid3d::~Grid3d() {
     clearGrid();
 }
 
-void Grid3d::initialize(const GridParams& gridParams, bool ifMpiFFT, int allocLocal) {
+void Grid3d::create(const GridParams& gridParams) {
+    vec3<int> n = gridParams.n;
+    create(gridParams, n.x*n.y*(n.z / 2 + 1));
+}
+
+void Grid3d::create(const GridParams& gridParams, size_t allocLocal) {
     clearGrid();
 
     this->gridParams = gridParams;
+    this->allocLocal = allocLocal;
 
     vec3<int> n = gridParams.n;
 
-	if (ifMpiFFT) {
-		if (allocLocal < n.x * n.y * (n.z / 2 + 1))
-			allocLocal = n.x * n.y * (n.z / 2 + 1);
-        std::cout << "Make real arrs " << 2 * allocLocal << ", complex arrs " << allocLocal <<std::endl;
-		E.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
-		B.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
-		J.initialize(2 * allocLocal, { n.x, n.y, 2 * (n.z / 2 + 1) });
-		EF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
-		BF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
-		JF.initialize(allocLocal, { n.x, n.y, n.z / 2 + 1 });
-	}
-	else {
-		E.initialize(n);
-		B.initialize(n);
-		J.initialize(n);
-		EF.initialize({ n.x, n.y, n.z / 2 + 1 });
-		BF.initialize({ n.x, n.y, n.z / 2 + 1 });
-		JF.initialize({ n.x, n.y, n.z / 2 + 1 });
-	}
-
-    if (this->gridParams.isFieldFuncsSetted())
-        setFields();
+    E.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) }, 2 * this->allocLocal);
+    B.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) }, 2 * this->allocLocal);
+    J.initialize({ n.x, n.y, 2 * (n.z / 2 + 1) }, 2 * this->allocLocal);
+    // complex fields have the same memory
+    EF.initialize(E, sizeComplex());
+    BF.initialize(B, sizeComplex());
+    JF.initialize(J, sizeComplex());
 }
 
 void Grid3d::setFields() {
     for (int i = 0; i < gridParams.n.x; i++)
         for (int j = 0; j < gridParams.n.y; j++)
             for (int k = 0; k < gridParams.n.z; k++) {
-                E.write(i, j, k, gridParams.fE({ i,j,k }, 0.0));
-                B.write(i, j, k, gridParams.fB({ i,j,k }, 0.0));
-                J.write(i, j, k, gridParams.fJ({ i,j,k }, 0.0));
+                vec3<> cEx = gridParams.getCoord({ i,j,k }, Field::E, Coordinate::x);
+                vec3<> cEy = gridParams.getCoord({ i,j,k }, Field::E, Coordinate::y);
+                vec3<> cEz = gridParams.getCoord({ i,j,k }, Field::E, Coordinate::z);
+                E.write(i, j, k, { gridParams.fE(cEx, 0.0).x,
+                    gridParams.fE(cEy, gridParams.startTime).y,
+                    gridParams.fE(cEz, gridParams.startTime).z });
+
+                vec3<> cBx = gridParams.getCoord({ i,j,k }, Field::B, Coordinate::x);
+                vec3<> cBy = gridParams.getCoord({ i,j,k }, Field::B, Coordinate::y);
+                vec3<> cBz = gridParams.getCoord({ i,j,k }, Field::B, Coordinate::z);
+                B.write(i, j, k, { gridParams.fB(cBx, gridParams.startTime).x,
+                    gridParams.fB(cBy, gridParams.startTime).y,
+                    gridParams.fB(cBz, gridParams.startTime).z });
+
+                vec3<> cJx = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::x);
+                vec3<> cJy = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::y);
+                vec3<> cJz = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::z);
+                J.write(i, j, k, { gridParams.fJ(cJx, gridParams.startTime).x,
+                    gridParams.fJ(cJy, gridParams.startTime).y,
+                    gridParams.fJ(cJz, gridParams.startTime).z });
             }
 }
 
 void Grid3d::setJ(int iter) {
     for (int i = 0; i < sizeReal().x; i++)
         for (int j = 0; j < sizeReal().y; j++)
-            for (int k = 0; k < sizeReal().z; k++)
-                J.write(i, j, k, gridParams.fJ({ i,j,k }, iter));
+            for (int k = 0; k < sizeReal().z; k++) {
+                vec3<> cJx = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::x);
+                vec3<> cJy = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::y);
+                vec3<> cJz = gridParams.getCoord({ i,j,k }, Field::J, Coordinate::z);
+                double tx = gridParams.getTime(iter, Field::J, Coordinate::x);
+                double ty = gridParams.getTime(iter, Field::J, Coordinate::y);
+                double tz = gridParams.getTime(iter, Field::J, Coordinate::z);
+                J.write(i, j, k, { gridParams.fJ(cJx, tx).x,
+                    gridParams.fJ(cJy, ty).y,
+                    gridParams.fJ(cJz, tz).z });
+            }
 }
 
 int Grid3d::operator==(const Grid3d& gr) {
@@ -83,8 +105,10 @@ int Grid3d::operator==(const Grid3d& gr) {
 }
 
 Grid3d& Grid3d::operator=(const Grid3d& gr) {
-    if (this != &gr)
-        initialize(gr.gridParams);
+    if (this != &gr) {
+        create(gr.gridParams, gr.allocLocal);
+        setFields();
+    }
     return *this;
 }
 

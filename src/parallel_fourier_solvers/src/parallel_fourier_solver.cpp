@@ -1,36 +1,17 @@
 #include "parallel_fourier_solver.h"
 #include <omp.h>
 
-Stat ParallelFourierSolver::initialize(const Grid3d & globalGrid, vec3<int> guardSize,
-    const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
-{
-    return init(globalGrid.getGridParams(), guardSize, mask, filter,
-        mpiSize, scheme, fieldSolver, fileWriter,
-        [this, &globalGrid]() {this->setLocalGrid(globalGrid); });
-}
-
 Stat ParallelFourierSolver::initialize(const GridParams & globalGP, vec3<int> guardSize,
     const Mask& mask, const Filter& filter, vec3<int> mpiSize,
     const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter)
-{
-    return init(globalGP, guardSize, mask, filter,
-        mpiSize, scheme, fieldSolver, fileWriter,
-        [this, &globalGP]() {this->setLocalGrid(globalGP); });
-}
-
-Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSize,
-    const Mask& mask, const Filter& filter, vec3<int> mpiSize,
-    const ParallelScheme& scheme, const FieldSolver& fieldSolver,
-    const FileWriter& fileWriter, std::function<void()> setLocalGridF)
+    const FileWriter& fileWriter, const Grid3d* globalGrid)
 {
     this->scheme.reset(scheme.clone());
     this->mask.reset(mask.clone());
     this->filter.reset(filter.clone());
     this->mpiWrapper.reset(new MPIWrapperGrid(mpiSize));
     this->fieldSolver.reset(fieldSolver.clone());
+    this->localGrid.reset(new Grid3d());
     this->fileWriter = fileWriter;
 
     if (this->mpiWrapper->initialize(mpiSize) == Stat::ERROR)
@@ -40,18 +21,18 @@ Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSiz
     if (validate() == Stat::ERROR)
         return Stat::ERROR;
     
-    localGrid.initialize(getLocalGridParams(globalGP));
-    this->fieldSolver->initialize(localGrid);
-    localGrid.setShifts(fieldSolver.getSpatialShift(), fieldSolver.getTimeShift());
-    setLocalGridF();
+    localGrid->create(getLocalGridParams(globalGP));
+    this->fieldSolver->initialize(localGrid.get());
+    if (globalGrid) this->setLocalGrid(globalGrid);
+    else this->setLocalGrid(globalGP);
 
     if (this->scheme->initialize(this->domainSize, this->guardSize) == Stat::ERROR)
         return Stat::ERROR;
-    if (this->mpiWorker.initialize(mpiWrapper,
-        this->scheme, &localGrid) == Stat::ERROR)
+    if (this->mpiWorker.initialize(mpiWrapper.get(),
+        this->scheme.get(), localGrid.get()) == Stat::ERROR)
         return Stat::ERROR;
     if (this->mpiWrapper->prepareExchanges(this->scheme->getSendBoards(),
-        this->scheme->getRecvBoards(), localGrid.sizeReal(), this->scheme->getOperation())
+        this->scheme->getRecvBoards(), localGrid->E.x.size(), this->scheme->getOperation())
         == Stat::ERROR)
         return Stat::ERROR;
     
@@ -63,12 +44,12 @@ Stat ParallelFourierSolver::init(const GridParams & globalGP, vec3<int> guardSiz
 
 void ParallelFourierSolver::applyMask()
 {
-    mask->apply(localGrid);
+    mask->apply(localGrid.get());
 }
 
 void ParallelFourierSolver::applyFilter()
 {
-    filter->apply(localGrid);
+    filter->apply(localGrid.get());
 }
 
 Stat ParallelFourierSolver::validate()
@@ -116,29 +97,20 @@ void ParallelFourierSolver::setDomainInfo(vec3<int> globalSize, vec3<int> guardS
 
 void ParallelFourierSolver::setLocalGrid(const GridParams & globalGP)
 {
-    GridParams localGP = localGrid.getGridParams();
-    for (int i = 0; i < localGP.n.x; i++)
-        for (int j = 0; j < localGP.n.y; j++)
-            for (int k = 0; k < localGP.n.z; k++) {
-                vec3<int> indexInGlobalGrid =
-                    mod(vec3<int>(i, j, k) + domainStart - guardSize, globalGP.n);
-                localGrid.E.write(i, j, k, globalGP.fE(indexInGlobalGrid, 0));
-                localGrid.B.write(i, j, k, globalGP.fB(indexInGlobalGrid, 0));
-                localGrid.J.write(i, j, k, globalGP.fJ(indexInGlobalGrid, 0));
-            }
+    localGrid->setFields();
 }
 
-void ParallelFourierSolver::setLocalGrid(const Grid3d & globalGrid)
+void ParallelFourierSolver::setLocalGrid(const Grid3d* globalGrid)
 {
-    GridParams localGP = localGrid.getGridParams();
+    GridParams localGP = localGrid->getGridParams();
     for (int i = 0; i < localGP.n.x; i++)
         for (int j = 0; j < localGP.n.y; j++)
             for (int k = 0; k < localGP.n.z; k++) {
                 vec3<int> indexInGlobalGrid =
-                    mod(vec3<int>(i, j, k) + domainStart - guardSize, globalGrid.getGridParams().n);
-                localGrid.E.write(i, j, k, globalGrid.E(indexInGlobalGrid));
-                localGrid.B.write(i, j, k, globalGrid.B(indexInGlobalGrid));
-                localGrid.J.write(i, j, k, globalGrid.J(indexInGlobalGrid));
+                    mod(vec3<int>(i, j, k) + domainStart - guardSize, globalGrid->getGridParams().n);
+                localGrid->E.write(i, j, k, globalGrid->E(indexInGlobalGrid));
+                localGrid->B.write(i, j, k, globalGrid->B(indexInGlobalGrid));
+                localGrid->J.write(i, j, k, globalGrid->J(indexInGlobalGrid));
             }
 }
 
@@ -152,7 +124,7 @@ GridParams ParallelFourierSolver::getLocalGridParams(const GridParams & globalGP
 
 void ParallelFourierSolver::setMask()
 {
-    scheme->setMask(mask);
+    scheme->setMask(mask.get());
 }
 
 void ParallelFourierSolver::setFilter()
@@ -181,42 +153,43 @@ void ParallelFourierSolver::run(int numIter, int maxIterBetweenExchange, double 
 void ParallelFourierSolver::doOneExchange(int numIter, double dt, bool ifWrite)
 {
     if (ifWrite)
-        fileWriter.write(localGrid, "1__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
-            "_before_mask.csv", Double);
-    mask->apply(localGrid);
-    if (ifWrite)
-        fileWriter.write(localGrid, "2__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
-            "_after_mask.csv", Double);
+        fileWriter.write(*localGrid, "1__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+            "_before_mask", Double);
 
     double t1 = omp_get_wtime();
-
-    fieldSolver->doFourierTransform(RtoC);
-
+    mask->apply(localGrid.get());
     double t2 = omp_get_wtime();
+
+    if (ifWrite)
+        fileWriter.write(*localGrid, "2__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+            "_after_mask", Double);
+
+    double t3 = omp_get_wtime();
+    fieldSolver->doFourierTransform(RtoC);
+    double t4 = omp_get_wtime();
 
     for (int i = 0; i < numIter; i++)
         fieldSolver->run(dt);
 
-    double t3 = omp_get_wtime();
-
-    fieldSolver->doFourierTransform(CtoR);
-
-    double t4 = omp_get_wtime();
-
-    if (ifWrite)
-        fileWriter.write(localGrid, "3__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
-            "_before_last_exc.csv", Double);
-
-    mpiWorker.exchangeGuard();
-
     double t5 = omp_get_wtime();
+    fieldSolver->doFourierTransform(CtoR);
+    double t6 = omp_get_wtime();
 
     if (ifWrite)
-        fileWriter.write(localGrid, "4__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
-            "_after_last_exc.csv", Double);
+        fileWriter.write(*localGrid, "3__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+            "_before_last_exc", Double);
 
-    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time RtoC is " << t2 - t1 << " s" << std::endl;
-    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time PSATD is " << t3 - t2 << " s" << std::endl;
-    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time CtoR is " << t4 - t3 << " s" << std::endl;
-    std::cout << "RANK " << MPIWrapper::MPIRank() << " : time exchange is " << t5 - t4 << " s" << std::endl;
+    double t7 = omp_get_wtime();
+    mpiWorker.exchangeGuard();
+    double t8 = omp_get_wtime();
+
+    if (ifWrite)
+        fileWriter.write(*localGrid, "4__rank_" + std::to_string((long long)MPIWrapper::MPIRank()) +
+            "_after_last_exc", Double);
+
+    //std::cout << "RANK " << MPIWrapper::MPIRank() << " : time mask is " << t2 - t1 << " s" << std::endl;
+    //std::cout << "RANK " << MPIWrapper::MPIRank() << " : time RtoC is " << t4 - t3 << " s" << std::endl;
+    //std::cout << "RANK " << MPIWrapper::MPIRank() << " : time PSATD is " << t5 - t4 << " s" << std::endl;
+    //std::cout << "RANK " << MPIWrapper::MPIRank() << " : time CtoR is " << t6 - t5 << " s" << std::endl;
+    //std::cout << "RANK " << MPIWrapper::MPIRank() << " : time exchange is " << t7 - t6 << " s" << std::endl;
 }

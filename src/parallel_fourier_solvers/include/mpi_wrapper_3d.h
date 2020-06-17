@@ -68,15 +68,17 @@ public:
         MPIWrapper::MPIBarrier(cartComm);
     }
 
+    Stat MPIISendSubarray(Array3d<double>& arr, Boards boards,
+        vec3<int> dest, int tag) const;
     Stat MPISendSubarray(Array3d<double>& arr, Boards boards,
-        vec3<int> dest, int tag, bool ifBlock) const;
+        vec3<int> dest, int tag) const;
 
     Stat MPIRecvSubarray(Array3d<double>& arr, Boards boards,
         vec3<int> source, int tag) const;
 
 protected:
 
-    Stat createSubarray(MPI_Datatype& subarray, Boards board,
+    Stat createSubarray(std::pair<MPI_Datatype, bool>& subarray, Boards board,
         vec3<int> arrSize) const;
 
     void freeSubarray(MPI_Datatype& subarray) const;
@@ -86,10 +88,8 @@ protected:
 
 
 class MPIWrapperGrid: public MPIWrapper3d {
-    vec3<Pair<MPI_Datatype>> sendTypes;
-    vec3<Pair<MPI_Datatype>> recvTypes;
-    vec3<Pair<bool>> ifSendTypeCreated;
-    vec3<Pair<bool>> ifRecvTypeCreated;
+    vec3<Pair<std::pair<MPI_Datatype, bool>>> sendTypes;
+    vec3<Pair<std::pair<MPI_Datatype, bool>>> recvTypes;
 
     vec3<Pair<Boards>> sendBoards;
     vec3<Pair<Boards>> recvBoards;
@@ -97,18 +97,16 @@ class MPIWrapperGrid: public MPIWrapper3d {
     Operation operation;
 
     vec3<bool> ifExchange;
-    bool ifSubarrInit = false;
 
 public:
     MPIWrapperGrid() {
-        setFlagsFalse();
+        create();
     }
     MPIWrapperGrid(vec3<int> np): MPIWrapper3d(np) {
-        setFlagsFalse();
+        create();
     }
     ~MPIWrapperGrid() {
-        if (ifSubarrInit) freeSubarrays();
-        setFlagsFalse();
+        freeSubarrays();
     }
 
     Stat initialize(vec3<int> mpiSize) {
@@ -123,7 +121,8 @@ public:
     Stat prepareExchanges(vec3<Pair<Boards>> sendBoards,
         vec3<Pair<Boards>> recvBoards, vec3<int> globalArrSize, Operation op);
 
-    void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag, bool ifBlock);
+    void sendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag);
+    void iSendGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag);
     void recvGuard(Array3d<double>& arr, Coordinate coord, Side side, int tag);
 
     void accumulate(Array3d<double>& arr, Array3d<double>& tmpArray, Boards boards);
@@ -136,13 +135,12 @@ protected:
 
     int getNeighbourRank(Coordinate coord, Side side) const;
 
-    void setFlagsFalse() {
-        ifSubarrInit = false;
+    void create() {
         for (int coord = 0; coord < 3; coord++) {
-            ifSendTypeCreated[coord].left =false;
-            ifSendTypeCreated[coord].right = false;
-            ifRecvTypeCreated[coord].left = false;
-            ifRecvTypeCreated[coord].right = false;
+            sendTypes[coord].left.second = false;
+            sendTypes[coord].right.second = false;
+            recvTypes[coord].left.second = false;
+            recvTypes[coord].right.second = false;
         }
     }
 };

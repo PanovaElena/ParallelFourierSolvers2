@@ -6,8 +6,8 @@
 #include "grid_params.h"
 
 template <class T>
-struct FieldForGrid : public vec3<Array3d<T>> {
-
+struct VectorField: public vec3<Array3d<T>> {
+    
     __forceinline vec3<T> operator() (int i, int j, int k) {
         return vec3<T>(this->x(i, j, k), this->y(i, j, k), this->z(i, j, k));
     }
@@ -25,20 +25,26 @@ struct FieldForGrid : public vec3<Array3d<T>> {
         this->y.clear();
         this->z.clear();
     }
-    __forceinline void initialize(vec3<int> _n) {
-        this->x.initialize(_n);
-        this->y.initialize(_n);
-        this->z.initialize(_n);
+    __forceinline void initialize(vec3<int> n) {
+        this->x.create(n);
+        this->y.create(n);
+        this->z.create(n);
     }
-    __forceinline void initialize(int size1d, vec3<int> _n) {
-		this->x.initialize(size1d, _n);
-		this->y.initialize(size1d, _n);
-		this->z.initialize(size1d, _n);
+    __forceinline void initialize(vec3<int> n, int alloc) {
+		this->x.create(n, alloc);
+		this->y.create(n, alloc);
+		this->z.create(n, alloc);
 	}
-    __forceinline friend bool operator==(const FieldForGrid& f1, const FieldForGrid& f2) {
+    template <class U>
+    __forceinline void initialize(VectorField<U>& field, vec3<int> n) {
+        this->x.createShallowCopy(field.x, n);
+        this->y.createShallowCopy(field.y, n);
+        this->z.createShallowCopy(field.z, n);
+    }
+    __forceinline friend bool operator==(const VectorField& f1, const VectorField& f2) {
         return (f1.x == f2.x && f1.y == f2.y && f1.z == f2.z);
     }
-    __forceinline friend bool operator!=(const FieldForGrid& f1, const FieldForGrid& f2) {
+    __forceinline friend bool operator!=(const VectorField& f1, const VectorField& f2) {
         return !(f1 == f2);
     }
 };
@@ -47,23 +53,25 @@ class Grid3d
 {
 private:
     GridParams gridParams;
+    size_t allocLocal;
 
     void clearGrid();
 
     Type state = Double;  // if grid complex or real
 
 public:
-    FieldForGrid<double> E;
-    FieldForGrid<double> B;
-    FieldForGrid<double> J;
-    FieldForGrid<MyComplex> EF;
-    FieldForGrid<MyComplex> BF;
-    FieldForGrid<MyComplex> JF;
+    VectorField<double> E;
+    VectorField<double> B;
+    VectorField<double> J;
+    VectorField<MyComplex> EF;
+    VectorField<MyComplex> BF;
+    VectorField<MyComplex> JF;
 
 public:
     Grid3d();
     Grid3d(const Grid3d& gr);
-    Grid3d(const GridParams& params, bool ifMpiFFT = false, int allocLocal = -1);
+    Grid3d(const GridParams& params);
+    Grid3d(const GridParams& params, size_t allocLocal);
     ~Grid3d();
 
     //сравнение только по вещественным полям
@@ -74,7 +82,8 @@ public:
 
     Grid3d& operator=(const Grid3d& grid2);
 
-    void initialize(const GridParams& params, bool ifMpiFFT = false, int allocLocal = -1);
+    void create(const GridParams& params);
+    void create(const GridParams& params, size_t allocLocal);
     void setFields();
     void setJ(int iter);
 
@@ -85,11 +94,8 @@ public:
     vec3<double> getStart() const;
     vec3<double> getEnd() const;
 
-    vec3<> getCoord(vec3<> node) {
-        return gridParams.getCoord(node);
-    }
-    vec3<int> getNode(vec3<> coord) {
-        return gridParams.getNode(coord);
+    vec3<> getCoord(vec3<> node, Field field, Coordinate fieldCoord) {
+        return gridParams.getCoord(node, field, fieldCoord);
     }
     vec3<int> getNode(vec3<> coord, Field field, Coordinate fieldCoord) {
         return gridParams.getNode(coord, field, fieldCoord);
@@ -97,10 +103,6 @@ public:
 
     GridParams getGridParams() const {
         return gridParams;
-    }
-
-    void setShifts(const vec3<vec3<vec3<>>>& shiftSp, const vec3<>& shiftT) {
-        gridParams.setShifts(shiftSp, shiftT);
     }
 
     Direction getLastFourierTransformDirect() {

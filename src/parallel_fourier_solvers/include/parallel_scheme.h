@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <string>
 #include "vector3d.h"
 #include "status.h"
@@ -24,7 +23,7 @@ public:
     }
 
     virtual void setBoardsForExchange() = 0;
-    virtual void setMask(const std::shared_ptr<Mask>& mask) = 0;
+    virtual void setMask(Mask * mask) = 0;
 
     vec3<int> getGuardSize() {
         return guardSize;
@@ -64,7 +63,7 @@ public:
 
     void setBoardsForExchange() override;
 
-    void setMask(const std::shared_ptr<Mask>& mask) override {
+    void setMask(Mask * mask) override {
         mask->setDomainAndGuardSize(domainSize, guardSize);
     }
 
@@ -89,7 +88,7 @@ public:
 
     void setBoardsForExchange() override;
 
-    void setMask(const std::shared_ptr<Mask>& mask) override {
+    void setMask(Mask * mask) override {
         mask->setDomainAndGuardSize(domainSize + guardSize, guardSize / 2);
     }
 

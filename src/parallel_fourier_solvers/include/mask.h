@@ -41,8 +41,8 @@ public:
         return (m1 != m2);
     }
     virtual double compMult(vec3<int> ind) = 0;
-    void apply(Grid3d& grid);
-    void apply(Grid3d& grid, Field f, Coordinate c);
+    void apply(Grid3d* grid);
+    void apply(Grid3d* grid, Field f, Coordinate c);
 
     virtual std::string to_string() = 0;
 };

@@ -4,12 +4,12 @@
 #include "simple_types.h"
 #include "array3d.h"
 
-typedef FieldForGrid<double> Grid3d::* FieldOfGrid;
+typedef VectorField<double> Grid3d::* FieldOfGrid;
 typedef double vec3<double>::* MemberOfVec;
-typedef Array3d<double> FieldForGrid<double>::* MemberOfField;
+typedef Array3d<double> VectorField<double>::* MemberOfField;
 
 template<class T>
-inline FieldForGrid<T> Grid3d::* getMemberPtrField(Field f) {
+inline VectorField<T> Grid3d::* getMemberPtrField(Field f) {
     switch (f) {
     case E:
         return &Grid3d::E;
@@ -23,7 +23,7 @@ inline FieldForGrid<T> Grid3d::* getMemberPtrField(Field f) {
 }
 
 template<>
-inline FieldForGrid<MyComplex> Grid3d::* getMemberPtrField(Field f) {
+inline VectorField<MyComplex> Grid3d::* getMemberPtrField(Field f) {
     switch (f) {
     case E:
         return &Grid3d::EF;
@@ -51,6 +51,6 @@ inline T vec3<T>::* getMemberPtrCoord(Coordinate coord) {
 }
 
 template<class T>
-inline Array3d<T> FieldForGrid<T>::* getMemberPtrFieldCoord(Coordinate coord) {
+inline Array3d<T> VectorField<T>::* getMemberPtrFieldCoord(Coordinate coord) {
     return getMemberPtrCoord<Array3d<T>>(coord);
 }

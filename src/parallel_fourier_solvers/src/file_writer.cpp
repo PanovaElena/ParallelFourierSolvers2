@@ -1,56 +1,76 @@
 #include <fstream>
 #include <iomanip>
+#include <functional>
+#include <cmath>
 #include "grid3d.h"
 #include "file_writer.h"
 #include "simple_types.h"
 #include "class_member_ptr.h"
 
-void setSymbols(Section::Plane plane, std::string& si, std::string& sj, std::string& sk) {
-    switch (plane) {
-    case Section::XOY:
-        si = ";"; sj = "\n"; sk = "";
-        break;
-    case Section::XOZ:
-        si = ";"; sj = ""; sk = "\n";
-        break;
-    case Section::YOZ:
-        si = ""; sj = ";"; sk = "\n";
-        break;
-    default:
-        break;
+void FileWriter::writeArr(const std::function<double(int, int, int)>& value, 
+    std::ofstream& file, std::string si, std::string sj, std::string sk) const {
+    for (int k = section.startZ; k <= section.endZ; k++) {
+        for (int j = section.startY; j <= section.endY; j++) {
+            for (int i = section.startX; i <= section.endX; i++)
+                file << std::setprecision(15) << value(i, j, k) << si;
+            file << sj;
+        }
+        file << sk;
     }
 }
 
-void FileWriter::write(const Grid3d& gr, std::string name, Type type, std::string si,
+void FileWriter::writeFields(const Grid3d& gr, std::string name, Type type, std::string si,
     std::string sj, std::string sk) const {
-    std::ofstream file(dir + name);
+    for (int fi = 0; fi < fields.size(); fi++) {
+        Field field = fields[fi].first;
+        Coordinate coord = fields[fi].second;
 
-    if (type == Double) {
-        const Array3d<double>& arr = gr.*getMemberPtrField<double>(field)
-            .*getMemberPtrFieldCoord<double>(coord);
-        for (int k = section.startZ; k <= section.endZ; k++) {
-            for (int j = section.startY; j <= section.endY; j++) {
-                for (int i = section.startX; i <= section.endX; i++)
-                    file << std::setprecision(15) << arr(i, j, k) << si;
-                file << sj;
-            }
-            file << sk;
-        }
-    }
-    else if (type == Complex) {
-        const Array3d<MyComplex>& arr = gr.*getMemberPtrField<MyComplex>(field)
-            .*getMemberPtrFieldCoord<MyComplex>(coord);
-        for (int k = section.startZ; k <= section.endZ; k++) {
-            for (int j = section.startY; j <= section.endY; j++) {
-                for (int i = section.startX; i <= section.endX; i++)
-                    file << std::setprecision(15) << arr(i, j, k).getAbs() << si;
-                file << sj;
-            }
-            file << sk;
-        }
-    }
+        std::string _name = "/" + name + "_" + to_string(field) + to_string(coord) + ".csv";
+        std::ofstream file(dir + _name);
 
-    file.close();
+        if (type == Double) {
+            const Array3d<double>& arr = gr.*getMemberPtrField<double>(field)
+                .*getMemberPtrFieldCoord<double>(coord);
+            writeArr([arr](int i, int j, int k) {
+                return arr(i, j, k);
+            }, file, si, sj, sk);
+        }
+        else if (type == Complex) {
+            const Array3d<MyComplex>& arr = gr.*getMemberPtrField<MyComplex>(field)
+                .*getMemberPtrFieldCoord<MyComplex>(coord);
+            writeArr([arr](int i, int j, int k) {
+                return arr(i, j, k).getAbs();
+            }, file, si, sj, sk);
+        }
+
+        file.close();
+    }
+}
+
+void FileWriter::writeFieldNorms(const Grid3d& gr, std::string name, Type type, std::string si,
+    std::string sj, std::string sk) const {
+    for (int fi = 0; fi < fieldNorms.size(); fi++) {
+        Field field = fieldNorms[fi];
+
+        std::string _name = "/" + name + "_" + to_string(field) + "_norm.csv";
+        std::ofstream file(dir + _name);
+
+        if (type == Double) {
+            const Array3d<double>& arrx = gr.*getMemberPtrField<double>(field)
+                .*getMemberPtrFieldCoord<double>(Coordinate::x);
+            const Array3d<double>& arry = gr.*getMemberPtrField<double>(field)
+                .*getMemberPtrFieldCoord<double>(Coordinate::y);
+            const Array3d<double>& arrz = gr.*getMemberPtrField<double>(field)
+                .*getMemberPtrFieldCoord<double>(Coordinate::z);
+            writeArr([arrx, arry, arrz](int i, int j, int k) {
+                return sqrt(arrx(i, j, k)*arrx(i, j, k) +
+                    arry(i, j, k)*arry(i, j, k) +
+                    arrz(i, j, k)*arrz(i, j, k));
+            }, file, si, sj, sk);
+        }
+
+        file.close();
+    }
 }
 
 void FileWriter::write0d(const Grid3d& gr, std::string name, Type type) const {
@@ -102,5 +122,21 @@ void Section::setBorders(const Grid3d& gr) {
         LocationOfPlane loc = plane1 == Plane::YOZ ? loc1 : plane2 == Plane::YOZ ?
             loc2 : plane3 == Plane::YOZ ? loc3 : LocationOfPlane::noneLocation;
         setCoordUsingLocation(loc, startX, endX, gr.sizeReal().x);
+    }
+}
+
+void FileWriter::setSymbols(Section::Plane plane, std::string& si, std::string& sj, std::string& sk) const {
+    switch (plane) {
+    case Section::XOY:
+        si = ";"; sj = "\n"; sk = "";
+        break;
+    case Section::XOZ:
+        si = ";"; sj = ""; sk = "\n";
+        break;
+    case Section::YOZ:
+        si = ""; sj = ";"; sk = "\n";
+        break;
+    default:
+        break;
     }
 }

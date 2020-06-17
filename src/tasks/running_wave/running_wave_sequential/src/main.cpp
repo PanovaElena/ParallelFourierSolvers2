@@ -1,46 +1,55 @@
 #include <string>
 #include <iostream>
 #include <omp.h>
-#include "parser_running_wave.h"
+#include "fftw3.h"
 #include "running_wave.h"
-#include "fourier_transform.h"
-#include "field_solver.h"
+#include "grid3d.h"
 
 
-void testBody(RunningWave& runningWave) {
+struct Configuration {
 
-    double t1 = omp_get_wtime();
+    RunningWaveTask task;
+    RunningWaveTaskParser parser;
+    std::unique_ptr<Grid3d> grid;
 
-    runningWave.params.fieldSolver->doFourierTransform(RtoC);
+    Stat initialize(int& argc, char**& argv) {
+        Stat status = parser.parseArgs(argc, argv, task);
+        if (status != Stat::OK)
+            return status;
 
-    for (int j = 0; j < runningWave.params.nSeqSteps; j++) {
-        runningWave.params.fieldSolver->run(runningWave.params.dt);
+        parser.print(task);
+        grid.reset(new Grid3d(task.gridParams));
+        task.fieldSolver->initialize(grid.get());
+        grid->setFields();
+
+        return Stat::OK;
     }
 
-    runningWave.params.fieldSolver->doFourierTransform(CtoR);
-	
-    double t2 = omp_get_wtime();
+    void testBody() {
+        double t1 = omp_get_wtime();
+        task.fieldSolver->doFourierTransform(RtoC);
+        for (int j = 0; j < task.nIter; j++)
+            task.fieldSolver->run(task.gridParams.dt);
+        task.fieldSolver->doFourierTransform(CtoR);
+        double t2 = omp_get_wtime();
 
-    std::cout << "Time of sequential version is " << t2 - t1 << std::endl;
+        std::cout << "Time of sequential version is " << t2 - t1 << std::endl;
 
-    runningWave.params.fileWriter.write(runningWave.grid, "sequential_result.csv",
-        Double, "writing sequential result..");
+        task.fileWriter.write(*grid, "sequential_result",
+            Double, "writing sequential result..");
+    }
 
-}
+};
 
 int main(int argc, char** argv) {
     fftw_init_threads();
-    RunningWave runningWave;
-    ParserRunningWave parser;
-    ParametersForRunningWave params;
-    Stat status = parser.parseArgsForSequential(argc, argv, params);
-    if (status != Stat::OK)
-    {
-        std::cout << "ERROR: wrong status" << std::endl;
-        return 0;
-    }
-    params.print();
 
-    runningWave.setParamsForTest(params);
-    testBody(runningWave);
+    Configuration configuration;
+    Stat status = configuration.initialize(argc, argv);
+    if (status == Stat::OK)
+        configuration.testBody();
+    else if (status == Stat::ERROR)
+        std::cout << "ERROR!!!" << std::endl;
+
+    return 0;
 }

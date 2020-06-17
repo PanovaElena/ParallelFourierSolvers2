@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 template <class T>
 class vec3;
@@ -68,3 +69,38 @@ enum Coordinate {
 };
 
 typedef Pair<vec3<int>> Boards;
+
+inline std::string to_string(Field f)
+{
+    switch (f) {
+    case E:
+        return "E";
+    case B:
+        return "B";
+    default:
+        return "J";
+    }
+    return "";
+}
+
+inline std::string to_string(Coordinate c)
+{
+    switch (c) {
+    case x:
+        return "x";
+    case y:
+        return "y";
+    default:
+        return "z";
+    }
+    return "";
+}
+
+inline std::string to_string(State state) {
+    switch (state) {
+    case on:
+        return "on";
+    default:
+        return "off";
+    }
+}

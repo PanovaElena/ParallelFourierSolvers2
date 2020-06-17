@@ -55,27 +55,47 @@ public:
 
 template <class T>
 class Array3d {
+public:
     vec3<int> n;
-	int n1d;
+	size_t alloc;
     std::vector<T, NUMA_Allocator<T>> data;
+    T* row = 0;
+    bool ifStorage;
 
     void allocMem();
 
-public:
-    void initialize(vec3<int> n);
-	void initialize(int n1d, vec3<int> n);
-    Array3d();
-    Array3d(const Array3d& arr);
-    Array3d(vec3<int> n);
-    ~Array3d() { clear(); }
+    Array3d() {}
+    Array3d(const Array3d& arr) {
+        if (arr.ifStorage) createCopy(arr);
+        else createShallowCopy(arr);
+    }
+    Array3d(vec3<int> n) {
+        create(n);
+    }
+    Array3d(vec3<int> n, int alloc) {
+        create(n, alloc);
+    }
+    ~Array3d() {
+        clear();
+    }
 
-    friend int operator==(const Array3d<T>& arr1, const Array3d<T>& arr2) {
-        if (arr1.n.x != arr2.n.x || arr1.n.y != arr2.n.y || arr1.n.z != arr2.n.z) return 0;
+    void create(vec3<int> n);
+    void create(vec3<int> n, int alloc);
+
+    void createCopy(const Array3d& arr);
+    void createShallowCopy(const Array3d& arr);
+    template <class U>
+    void createShallowCopy(Array3d<U>& arr, vec3<int> n);
+
+    friend bool operator==(const Array3d<T>& arr1, const Array3d<T>& arr2) {
+        if (arr1.n.x != arr2.n.x || arr1.n.y != arr2.n.y || arr1.n.z != arr2.n.z)
+            return false;
         for (int i = 0; i < arr1.n.x; i++)
             for (int j = 0; j < arr1.n.y; j++)
                 for (int k = 0; k < arr1.n.z; k++)
-                    if (arr1.data[arr1.getIndex(i, j, k)] != arr2.data[arr2.getIndex(i, j, k)]) return 0;
-        return 1;
+                    if (arr1.data[arr1.getIndex(i, j, k)] != arr2.data[arr2.getIndex(i, j, k)])
+                        return false;
+        return true;
     };
     friend int operator!=(const Array3d<T>& arr1, const Array3d<T>& arr2) {
         return !(arr1 == arr2);
@@ -92,145 +112,139 @@ public:
     T operator[](int index) const;
     T operator()(int index) const;
 
-    int getIndex(int i, int j, int k) const;
+    size_t getIndex(int i, int j, int k) const;
 
     Array3d& operator=(const Array3d& arr);
 
     T* getArray1d();
 
     vec3<int> size() const { return n; };
-    int size1d() const { return n1d; };
+    size_t size1d() const { return alloc; };
 
     void clear();
-    void setToZeros();
 };
 
 template<class T>
 inline void Array3d<T>::allocMem()
 {
-    data.resize(n1d);
+    data.resize(alloc);
 }
 
 template<class T>
-inline void Array3d<T>::initialize(vec3<int> _n) {
-    clear();
-    n = _n;
-	n1d = n.x * n.y * n.z;
-    allocMem();
-    setToZeros();
+inline void Array3d<T>::create(vec3<int> n) {
+    create(n, n.x * n.y * n.z);
 }
 
 template<class T>
-inline void Array3d<T>::initialize(int _n1d, vec3<int> _n) {
+inline void Array3d<T>::create(vec3<int> n, int alloc) {
 	clear();
-	n = _n;
-	n1d = _n1d;
+	this->n = n;
+	this->alloc = alloc;
+    this->ifStorage = true;
 	allocMem();
-	setToZeros();
+    row = data.data();
 }
 
 template<class T>
-inline Array3d<T>::Array3d() {
-}
-
-template<class T>
-inline Array3d<T>::Array3d(const Array3d & arr) {
-    n = arr.n;
-	n1d = arr.n1d;
-
-    allocMem();
-
+inline void Array3d<T>::createCopy(const Array3d & arr) {
+    create(arr.n, arr.alloc);
     for (int i = 0; i < n.x; i++)
         for (int j = 0; j < n.y; j++)
             for (int k = 0; k < n.z; k++)
-                (*this)(i, j, k) = arr.data[getIndex(i, j, k)];
+                (*this)(i, j, k) = arr(i, j, k);
 }
 
 template<class T>
-inline Array3d<T>::Array3d(vec3<int> _n) {
-    initialize(_n);
+inline void Array3d<T>::createShallowCopy(const Array3d<T>& arr) {
+    clear();
+    this->n = arr.n;
+    this->alloc = arr.alloc;
+    this->ifStorage = false;
+    row = arr.row;
 }
 
 template<class T>
-inline T & Array3d<T>::operator()(int i, int j, int k) {
-    return data[getIndex(i, j, k)];
+template<class U>
+inline void Array3d<T>::createShallowCopy(Array3d<U>& arr, vec3<int> n) {
+    clear();
+    this->n = n;
+    this->alloc = arr.alloc;
+    this->ifStorage = false;
+    row = reinterpret_cast<T*>(arr.row);
 }
 
 template<class T>
-inline T & Array3d<T>::operator()(vec3<int> index) {
-    return data[getIndex(index.x, index.y, index.z)];
+__forceinline T & Array3d<T>::operator()(int i, int j, int k) {
+    return row[getIndex(i, j, k)];
 }
 
 template<class T>
-inline T & Array3d<T>::get(int i, int j, int k) {
-    return data[getIndex(i, j, k)];
+__forceinline T & Array3d<T>::operator()(vec3<int> index) {
+    return row[getIndex(index.x, index.y, index.z)];
 }
 
 template<class T>
-inline T & Array3d<T>::operator[](int index) {
-    return data[index];
+__forceinline T & Array3d<T>::get(int i, int j, int k) {
+    return row[getIndex(i, j, k)];
 }
 
 template<class T>
-inline T & Array3d<T>::operator()(int index) {
-    return data[index];
+__forceinline T & Array3d<T>::operator[](int index) {
+    return row[index];
 }
 
 template<class T>
-inline T Array3d<T>::operator()(int i, int j, int k) const {
-    return data[getIndex(i, j, k)];
+__forceinline T & Array3d<T>::operator()(int index) {
+    return row[index];
 }
 
 template<class T>
-inline T Array3d<T>::operator()(vec3<int> index) const {
-    return data[getIndex(index.x, index.y, index.z)];
+__forceinline T Array3d<T>::operator()(int i, int j, int k) const {
+    return row[getIndex(i, j, k)];
 }
 
 template<class T>
-inline T Array3d<T>::get(int i, int j, int k) const {
-    return data[getIndex(i, j, k)];
+__forceinline T Array3d<T>::operator()(vec3<int> index) const {
+    return row[getIndex(index.x, index.y, index.z)];
 }
 
 template<class T>
-inline T Array3d<T>::operator[](int index) const {
-    return data[index];
+__forceinline T Array3d<T>::get(int i, int j, int k) const {
+    return row[getIndex(i, j, k)];
 }
 
 template<class T>
-inline T Array3d<T>::operator()(int index) const {
-    return data[index];
+__forceinline T Array3d<T>::operator[](int index) const {
+    return row[index];
 }
 
 template<class T>
-inline int Array3d<T>::getIndex(int i, int j, int k) const
+__forceinline T Array3d<T>::operator()(int index) const {
+    return row[index];
+}
+
+template<class T>
+__forceinline size_t Array3d<T>::getIndex(int i, int j, int k) const
 {
     return (i*n.y + j)*n.z + k;
 }
 
 template<class T>
 inline Array3d<T> & Array3d<T>::operator=(const Array3d & arr) {
-    initialize(arr.n);
-
-    for (int i = 0; i < n.x; i++)
-        for (int j = 0; j < n.y; j++)
-            for (int k = 0; k < n.z; k++)
-                (*this)(i, j, k) = arr.data[getIndex(i, j, k)];
-
+    if (this != &arr) {
+        if (arr.ifStorage) createCopy(arr);
+        else createShallowCopy(arr);
+    }
     return *this;
 }
 
 template<class T>
-inline T * Array3d<T>::getArray1d() {
-    return data;
+__forceinline T * Array3d<T>::getArray1d() {
+    return row;
 }
 
 template<class T>
 inline void Array3d<T>::clear() {
-    data.resize(0);
-}
-
-template<class T>
-inline void Array3d<T>::setToZeros() {
-    for (int i = 0; i < n1d; i++)
-        data[i] = 0;
+    data.clear();
+    row = 0;
 }

@@ -17,13 +17,13 @@ else: MPI = "mpirun"
 
 
 NAME_SEQ_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/running_wave_sequential"+"\""
-NAME_PAR_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/running_wave_parallel"+"\""
+NAME_PAR_PROGRAM = "\""+DIR_SCRIPT+"/../../../build/bin/running_wave_seq_and_par"+"\""
 
 DIR_PICTURES = "./pictures/"
 DIR_RESULTS = "./results/"
 
-NAME_FILE_SEQ = DIR_RESULTS+"/sequential_result.csv"
-NAME_FILE_PAR = DIR_RESULTS+"/parallel_result.csv"
+NAME_FILE_SEQ = DIR_RESULTS+"/sequential_result_Ey.csv"
+NAME_FILE_PAR = DIR_RESULTS+"/parallel_result_Ey.csv"
 
 if (os.path.exists(DIR_PICTURES)): 
     for (dirpath, dirnames, filenames) in os.walk(DIR_PICTURES):
@@ -37,14 +37,47 @@ if (os.path.exists(DIR_RESULTS)):
             os.remove(DIR_RESULTS+file)
 else: os.mkdir(DIR_RESULTS)
 
+funcFindPar = None
+
 if (args.dimension_of_output_data==1):
     funcRead = fr.readFile1d
     funcPlot = gr.plot1d
     funcCalcError = ce.computeError1d
+    
+    def func(np, guard):
+        npx, npy, = np
+        gx, gy, = guard
+        data_par_in_process = []
+        for prc in range(npx):
+            data_par_in_process.append(funcRead(DIR_RESULTS+"/after_last_exchange_rank_%d.csv" % prc))
+        data_par = []
+        for prc in range(npx):
+            data_par.extend(data_par_in_process[prc][gx:len(data_par_in_process[prc])-gx])
+        return data_par
+                
+    funcFindPar = func
+    
 else: 
     funcRead = fr.readFile2d
     funcPlot = gr.plot2d
     funcCalcError = ce.computeError2d
+    
+    def func(np, guard):
+        npx, npy, = np
+        gx, gy, = guard
+        data_par_in_process = [[] for prcx in range(npx)]
+        for prcx in range(npx):
+            for prcy in range(npy):
+                data_par_in_process[prcx].append(funcRead(DIR_RESULTS+"/after_last_exchange_rank_%d.csv" % npx*prcy+prcx))
+        n_lines = len(data_par_in_process[0][0])
+        data_par = [[] for i in range(n_lines-2*gy)]
+        for prcx in range(npx):
+            for prcy in range(npy):
+                for i in range(n_lines):
+                    data_par[i].extend(data_par_in_process[prcx][prcy][i][gx:len(data_par_in_process[prcx][prcy][i])-gx])
+        return data_par
+        
+    funcFindPar = func
 
 # sequential
 
@@ -64,7 +97,7 @@ command_args_seq = "-ax "+str(args.ax)+" "+\
                     \
                     "-solver "+str(args.solver)+" "+\
                     \
-                    "-nseqi "+str(args.n_iter)+" "+\
+                    "-ni "+str(args.n_iter)+" "+\
                     \
                     "-dim "+str(args.dimension_of_output_data)+" "+\
                     "-dump on "+\
@@ -105,8 +138,8 @@ command_args_par = "-ax "+str(args.ax)+" "+\
                     "-gy "+str(args.gy)+" "+\
                     "-gz "+str(args.gz)+" "+\
                     \
-                    "-nseqi "+str(args.n_sequential_iter)+" "+\
-                    "-npari "+str(args.n_parallel_iter)+" "+\
+                    "-ni "+str(args.n_iter)+" "+\
+                    "-npari "+str(args.n_par_iter)+" "+\
                     "-ndomi "+str(args.number_of_iterations_in_domain)+" "+\
                     \
                     "-scheme "+str(args.scheme)+" "+\
@@ -134,7 +167,7 @@ command_args_par = "-ax "+str(args.ax)+" "+\
                     
 np=args.npx*args.npy*args.npz
 
-if(args.n_parallel_iter!=0):                
+if(args.n_iter!=0):                
     process_par = subprocess.Popen(MPI+" -n "+str(np)+" "+NAME_PAR_PROGRAM+" "+command_args_par, shell=True)
     process_par.wait()
 
@@ -170,11 +203,12 @@ for (dirpath, dirnames, filenames) in os.walk(DIR_RESULTS):
                 funcPlot(DIR_PICTURES, file, data, arg, _log=True)
             else:
                 funcPlot(DIR_PICTURES, file, funcRead(DIR_RESULTS+file))
-        
-if (args.n_parallel_iter != 0):
+
+if (args.n_iter != 0):
+
+    data_par = funcRead(NAME_FILE_PAR)               
     data_seq = funcRead(NAME_FILE_SEQ)
-    data_par = funcRead(NAME_FILE_PAR)
-    funcPlot(DIR_PICTURES, "error",    funcCalcError(data_seq, data_par, _abs=True), _log=True)
+    funcPlot(DIR_PICTURES, "error", funcCalcError(data_seq, data_par, _abs=True), _log=True)
 
 
 

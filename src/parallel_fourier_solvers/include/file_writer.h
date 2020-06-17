@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include "simple_types.h"
 class Grid3d;
 
@@ -55,80 +56,29 @@ public:
 class FileWriter {
 private:
     std::string dir = std::string(ROOT_DIR)+"/";
-    Field field;
-    Coordinate coord;
+    std::vector<std::pair<Field, Coordinate>> fields;
+    std::vector<Field> fieldNorms;
     Section section;
     State state = on;
 
 public:
 
     FileWriter() {}
-    FileWriter(std::string _dir, Field _field, Coordinate _coord, 
-        Section _section, State _state = on) {
-        initialize(_dir, _field, _coord, _section, _state);
-    }
-
-    void initialize(std::string _dir, Field _field, Coordinate _coord, 
-        const Section& _section, State _state = on) {
+    FileWriter(std::string _dir, Section _section, State _state = on) {
         dir = _dir;
-        field = _field;
-        coord = _coord;
         section = _section;
         state = _state;
     }
 
-    void write(const Grid3d& gr, std::string name, Type t = Type::Double,
-        std::string message = "") {
-        write(gr, name, field, coord, t, message);
+    void pushField(Field f, Coordinate c) {
+        fields.push_back({ f, c });
     }
 
-    Coordinate getCoord() const {
-        return coord;
+    void pushFieldNorm(Field f) {
+        fieldNorms.push_back(f);
     }
 
-    Field getField() const {
-        return field;
-    }
-
-    std::string getDirectory() const {
-        return dir;
-    }
-
-    Section getSection() const {
-        return section;
-    }
-
-    void setCoord(Coordinate _coord) {
-        coord = _coord;
-    }
-
-    void setField(Field _field) {
-        field = _field;
-    }
-
-    void setDirectory(std::string _directory) {
-        dir = _directory;
-    }
-
-    void setSection(const Section& _section) {
-        section = _section;
-    }
-
-    void turnOn() {
-        state = on;
-    }
-    void turnOff() {
-        state = off;
-    }
-
-protected:
-    void write0d(const Grid3d& gr, std::string name, Type type) const;
-    void write1d(const Grid3d& gr, std::string name, Type type) const;
-    void write2d(const Grid3d& gr, std::string name, Type type) const;
-    void write(const Grid3d & gr, std::string name, Type type, std::string si,
-        std::string sj, std::string sk) const;
-
-    void write(const Grid3d& gr, std::string name, Field _field, Coordinate _coord,
+    void write(const Grid3d& gr, std::string name,
         Type t = Type::Double, std::string message = "") {
         if (state == off) return;
         if (message != "") std::cout << message << "\n";
@@ -145,4 +95,41 @@ protected:
             break;
         }
     }
+
+    std::string getDirectory() const {
+        return dir;
+    }
+
+    void setDirectory(std::string& dir) {
+        this->dir = dir;
+    }
+
+    State getState() {
+        return this->state;
+    }
+
+    void setState(State state) {
+        this->state = state;
+    }
+
+protected:
+    void write0d(const Grid3d& gr, std::string name, Type type) const;
+    void write1d(const Grid3d& gr, std::string name, Type type) const;
+    void write2d(const Grid3d& gr, std::string name, Type type) const;
+
+    void writeFields(const Grid3d & gr, std::string name, Type type, std::string si,
+        std::string sj, std::string sk) const;
+    void writeFieldNorms(const Grid3d & gr, std::string name, Type type, std::string si,
+        std::string sj, std::string sk) const;
+
+    void writeArr(const std::function<double(int, int, int)>& value,
+        std::ofstream& file, std::string si, std::string sj, std::string sk) const;
+
+    void write(const Grid3d & gr, std::string name, Type type, std::string si,
+        std::string sj, std::string sk) const {
+        writeFields(gr, name, type, si, sj, sk);
+        writeFieldNorms(gr, name, type, si, sj, sk);
+    }
+
+    void setSymbols(Section::Plane plane, std::string& si, std::string& sj, std::string& sk) const;
 };

@@ -57,6 +57,7 @@ command_args_seq = "-ax "+str(args.ax)+" "+\
 					"-solver "+str(args.solver)+" "+\
 					\
 					"-nseqi "+str(args.n_iter)+" "+\
+					"-npari "+str(0)+" "+\
 					\
 					"-dim "+str(args.dimension_of_output_data)+" "\
 					\
